@@ -22,7 +22,7 @@ and it's going to setup the dependnecies and run the frontend and backend.
 
 # Task list
 
-- [ ] I as a user can create to-do items, such as a grocery list. 
+- [x] I as a user can create to-do items, such as a grocery list. 
 - [ ] I as another user can collaborate in real-time with user - so that we can 
 (for example) edit our family shopping-list together.
 - [ ] I as a user can mark to-do items as “done” - so that I can avoid clutter and focus on
