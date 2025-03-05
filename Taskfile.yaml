@@ -11,6 +11,8 @@ tasks:
     deps:
       - setup-frontend
     dir: frontend
+    dotenv:
+      - ./frontend/.env
     cmds:
       - npm run dev
 
