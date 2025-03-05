@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e 
+
+http http://localhost:9999/todos << EOF
+{
+  "id": "2a25bb8c-dc2e-47e9-b07e-156a3ef3cf47",
+  "title": "Buy an ubiquti router"
+}
+EOF

@@ -2,21 +2,28 @@ package router
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
+	"github.com/samber/lo"
 	"github.com/zemzale/ubiquitest/oapi"
 )
 
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
-type Router struct{}
+type Router struct {
+	db *sqlx.DB
+}
 
-func Run() error {
+func NewRouter(db *sqlx.DB) *Router {
+	return &Router{db: db}
+}
+
+func Run(db *sqlx.DB) error {
 	mux := chi.NewRouter()
-	r := &Router{}
+	r := NewRouter(db)
 
 	setupRoutes(r, mux)
 	printDebugRoutes(mux)
@@ -41,5 +48,14 @@ func printDebugRoutes(mux *chi.Mux) {
 func (r *Router) PostTodos(
 	ctx context.Context, request oapi.PostTodosRequestObject,
 ) (oapi.PostTodosResponseObject, error) {
-	return nil, errors.New("not implemented")
+	result, err := r.db.Exec("INSERT INTO todos (id, title ) VALUES (?, ?)", request.Body.Id, request.Body.Title)
+	if err != nil {
+		return oapi.PostTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+	}
+
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return oapi.PostTodos400JSONResponse{Error: lo.ToPtr("item already exists")}, nil
+	}
+
+	return oapi.PostTodos201Response{}, nil
 }

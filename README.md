@@ -13,6 +13,7 @@ The repository is split into two parts:
 - `node 20.14 >=`
 - `npm 9.x.x >=`
 - `task` (https://taskfile.dev/installation/)
+- (optional) `httpie` for running scripts
 
 ## Running 
 

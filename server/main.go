@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/zemzale/ubiquitest/router"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
 func main() {
@@ -15,7 +17,16 @@ func main() {
 }
 
 func run() error {
-	if err := router.Run(); err != nil {
+	db, err := storage.NewDB()
+	if err != nil {
+		return err
+	}
+
+	if err := storage.CreateDB(db); err != nil {
+		return err
+	}
+
+	if err := router.Run(db); err != nil {
 		return err
 	}
 
