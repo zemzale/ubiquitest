@@ -5,23 +5,28 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/lo"
 	"github.com/zemzale/ubiquitest/oapi"
+	"github.com/zemzale/ubiquitest/ws"
 )
 
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
 type Router struct {
 	db *sqlx.DB
+	ws *ws.Server
 }
 
 func NewRouter(db *sqlx.DB) *Router {
-	return &Router{db: db}
+	return &Router{db: db, ws: ws.NewServer()}
 }
 
 func Run(db *sqlx.DB) error {
@@ -39,7 +44,9 @@ func Run(db *sqlx.DB) error {
 }
 
 func setupRoutes(r *Router, mux *chi.Mux) {
+	mux.Use(middleware.Logger)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
+	mux.HandleFunc("/ws/todos", r.WsTodos)
 }
 
 func printDebugRoutes(mux *chi.Mux) {
@@ -115,4 +122,22 @@ func (r *Router) GetTodos(
 	}
 
 	return oapi.GetTodos200JSONResponse(todos), nil
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func (r *Router) WsTodos(writer http.ResponseWriter, request *http.Request) {
+	conn, err := upgrader.Upgrade(writer, request, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	r.ws.TakeConnection(conn)
 }
