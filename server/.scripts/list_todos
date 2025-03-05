@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -euo pipefail
+
+http GET http://localhost:9999/todos

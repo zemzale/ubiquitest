@@ -7,7 +7,7 @@ type Item = {
     id: string,
 }
 
-export function useTodos() {
+export function useItems() {
     return useQuery({
         queryKey: ['todos'],
         queryFn: () => fetch(`${env.NEXT_PUBLIC_API_URL}/todos`)

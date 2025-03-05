@@ -6,13 +6,30 @@ info:
 
 paths:
   /todos:
+    get:
+      summary: Get all todo items
+      responses:
+        200:
+          description: List of todo items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create a new todo item
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewTodo'
+              $ref: '#/components/schemas/Todo'
       responses:
         201:
           description: Created
@@ -71,7 +88,7 @@ paths:
 
 components:
   schemas:
-    NewTodo:
+    Todo:
       type: object
       required: 
         - id

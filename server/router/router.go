@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/lo"
 	"github.com/zemzale/ubiquitest/oapi"
@@ -89,4 +90,29 @@ func (r *Router) PostLogin(
 
 		return oapi.PostLogin200JSONResponse{Id: userID, Username: request.Body.Username}, nil
 	}
+}
+
+func (r *Router) GetTodos(
+	ctx context.Context, request oapi.GetTodosRequestObject,
+) (oapi.GetTodosResponseObject, error) {
+	rows, err := r.db.Query("SELECT id, title FROM todos")
+	if err != nil {
+		return oapi.GetTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+	}
+
+	todos := make([]oapi.Todo, 0)
+	for rows.Next() {
+		var id string
+		var title string
+		if err := rows.Scan(&id, &title); err != nil {
+			return oapi.GetTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+		}
+		uuidId, err := uuid.Parse(id)
+		if err != nil {
+			return oapi.GetTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+		}
+		todos = append(todos, oapi.Todo{Id: uuidId, Title: title})
+	}
+
+	return oapi.GetTodos200JSONResponse(todos), nil
 }

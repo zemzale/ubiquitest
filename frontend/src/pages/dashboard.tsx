@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { handleClientScriptLoad } from "next/script";
-import { useAddItem } from "~/query/item";
+import { useAddItem, useItems } from "~/query/item";
 import { useUser } from "~/query/user";
 
 export default function Dashboard() {
@@ -14,13 +14,11 @@ export default function Dashboard() {
     }
 
     if (query.isError) {
-        router.push("/");
-        return <></>;
+        return <Error />;
     }
 
     if (!query.data) {
-        router.push("/");
-        return <></>;
+        return <Error />;
     }
 
 
@@ -34,6 +32,7 @@ export default function Dashboard() {
                 <p className="text-2xl mb-8">
                     You have successfully logged in. {query.data.username}
                 </p>
+                <ListItems />
                 <AddItem />
                 <Link
                     href="/"
@@ -51,13 +50,43 @@ function Loading() {
     return (
         <>
             <main className="flex min-h-screen flex-col items-center justify-center">
-                <h1 className="text-6xl font-bold mb-8">Welcome to Ubiquitodo!</h1>
                 <p className="text-2xl mb-8">
                     Loading...
                 </p>
             </main>
         </>
     );
+}
+
+function ListItems() {
+    const router = useRouter();
+    const query = useItems();
+
+    if (query.isLoading) {
+        return <Loading />
+    }
+    if (query.isError) {
+        router.push("/");
+        return <Error />;
+    }
+    if (!query.data) {
+        router.push("/");
+        return <Error />;
+    }
+    return <>
+        <ul>
+            {query.data.map((item) => <li key={item.id}>{item.title}</li>)}
+        </ul>
+    </>;
+}
+
+function Error() {
+    return <>
+        <h1 className="text-6xl font-bold mb-8">Error</h1>
+        <p className="text-2xl mb-8">
+            Something went wrong
+        </p>
+    </>;
 }
 
 
