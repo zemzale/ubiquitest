@@ -55,3 +55,27 @@ work related tasks.
 - [ ] I as a user can move/convert subtasks to tasks via drag & drop
 - [ ] I as a user can be sure that my todos will be persisted so that important information is not lost when server restarts
 - [ ] I as an owner/creator of a certain to-do list can freeze/unfreeze a to-do list I've created to avoid other users from mutating it
+
+
+# Notes
+
+## Backend decisions
+
+### Router choice
+
+I am going to use the chi router, since I have used it before and it's the most
+basic one that just gets out of the way and does the job.
+
+And for defining the routes, I am going to use the OpenAPI spec and the code gen
+tool. It's not really required, but I have been using it lately and I have found
+that it just makes reasoning about the design a lot easier.
+
+### Choice for ID type
+
+I am pretty sure that the current hotness is to use UUID V7 for IDs, but I have
+not really used it much yet, so I will just stick with UUID v4 that I know how
+it works.
+
+And I know that there is working google library for working with UUID V4 and
+there is one for JS also. Meaning that if I want to create TODO items, they can
+also be create on the frontend without having to worry about ID collisions.

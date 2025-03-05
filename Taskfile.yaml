@@ -6,12 +6,6 @@ tasks:
       - run-frontend
       - run-backend
 
-  setup-frontend:
-    desc: Install the frontend dependencies
-    dir: frontend
-    cmds:
-      - npm install
-
   run-frontend:
     desc: Run the next.js dev server 
     deps:
@@ -23,5 +17,21 @@ tasks:
   run-backend:
     desc: Run the backend go server
     dir: server
+    deps:
+      - oapi
     cmds:
       - go run main.go
+
+  setup-frontend:
+    desc: Install the frontend dependencies
+    dir: frontend
+    cmds:
+      - npm install
+
+  oapi:
+    desc: Generate the OpenAPI spec
+    dir: server
+    cmds:
+      - go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1 -package oapi -generate chi-server,types,strict-server -o ./oapi/api.gen.go ./oapi/openapi.yaml 
+    sources:
+      - server/oapi/openapi.yaml

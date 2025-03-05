@@ -1,0 +1,60 @@
+openapi: 3.1.0
+
+info:
+  title: Ubiquitodo API
+  version: 0.0.1
+
+paths:
+  /todos:
+    post:
+      summary: Create a new todo item
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTodo'
+      responses:
+        201:
+          description: Created
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: The error message
+                    example: The title is required
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: The error message
+                    example: Something went wrong
+
+components:
+  schemas:
+    NewTodo:
+      type: object
+      required: 
+        - id
+        - title
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The ID of the todo item
+          example: c0a0c2c7-a7b6-4e4c-b8a9-c3a4f9c9d0e1
+        title:
+          type: string
+          description: The title of the todo item
+          example: Buy groceries
+
+
