@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  default:
+    deps:
+      - run-frontend
+      - run-backend
+
+  setup-frontend:
+    desc: Install the frontend dependencies
+    dir: frontend
+    cmds:
+      - npm install
+
+  run-frontend:
+    desc: Run the next.js dev server 
+    deps:
+      - setup-frontend
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  run-backend:
+    desc: Run the backend go server
+    dir: server
+    cmds:
+      - go run main.go

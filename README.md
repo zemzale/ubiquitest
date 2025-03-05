@@ -5,6 +5,19 @@ The repository is split into two parts:
 - The 'server' contains the backend code in go 
 - The 'client' contains the frontend code with react and typescript
 
+# Running
+
+## Dependencies
+
+- `go 1.23 >=`
+- `node 20.14 >=`
+- `npm 9.x.x >=`
+- `task` (https://taskfile.dev/installation/)
+
+## Running 
+
+To run this whole thing locally, just run `task` from the root of the project
+and it's going to setup the dependnecies and run the frontend and backend.
 
 # Task list
 
