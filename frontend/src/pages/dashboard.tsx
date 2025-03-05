@@ -1,7 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { handleClientScriptLoad } from "next/script";
 import { useAddItem, useItems } from "~/query/item";
 import { useUser } from "~/query/user";
 
@@ -74,9 +73,24 @@ function ListItems() {
         return <Error />;
     }
     return <>
-        <ul>
-            {query.data.map((item) => <li key={item.id}>{item.title}</li>)}
-        </ul>
+        <div className="w-full max-w-md mb-6">
+            <h2 className="text-xl font-semibold mb-4">Your Items</h2>
+            <ul className="space-y-3">
+                {query.data.map((item) => (
+                    <li key={item.id}>
+                        <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <div>
+                                        <h3 className="font-medium text-gray-800">{item.title}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </div>
     </>;
 }
 
