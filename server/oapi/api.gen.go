@@ -14,6 +14,21 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Error defines model for Error.
+type Error struct {
+	// Error The error message
+	Error *string `json:"error,omitempty"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	// Id The ID of the user
+	Id uint `json:"id"`
+
+	// Username The username of the logged in user
+	Username string `json:"username"`
+}
+
 // NewTodo defines model for NewTodo.
 type NewTodo struct {
 	// Id The ID of the todo item
@@ -23,11 +38,23 @@ type NewTodo struct {
 	Title string `json:"title"`
 }
 
+// PostLoginJSONBody defines parameters for PostLogin.
+type PostLoginJSONBody struct {
+	// Username The username to login with
+	Username string `json:"username"`
+}
+
+// PostLoginJSONRequestBody defines body for PostLogin for application/json ContentType.
+type PostLoginJSONRequestBody PostLoginJSONBody
+
 // PostTodosJSONRequestBody defines body for PostTodos for application/json ContentType.
 type PostTodosJSONRequestBody = NewTodo
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Login the user with the given username
+	// (POST /login)
+	PostLogin(w http.ResponseWriter, r *http.Request)
 	// Create a new todo item
 	// (POST /todos)
 	PostTodos(w http.ResponseWriter, r *http.Request)
@@ -36,6 +63,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Login the user with the given username
+// (POST /login)
+func (_ Unimplemented) PostLogin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Create a new todo item
 // (POST /todos)
@@ -51,6 +84,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// PostLogin operation middleware
+func (siw *ServerInterfaceWrapper) PostLogin(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostLogin(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // PostTodos operation middleware
 func (siw *ServerInterfaceWrapper) PostTodos(w http.ResponseWriter, r *http.Request) {
@@ -180,10 +227,57 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/login", wrapper.PostLogin)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/todos", wrapper.PostTodos)
 	})
 
 	return r
+}
+
+type PostLoginRequestObject struct {
+	Body *PostLoginJSONRequestBody
+}
+
+type PostLoginResponseObject interface {
+	VisitPostLoginResponse(w http.ResponseWriter) error
+}
+
+type PostLogin200JSONResponse LoginResponse
+
+func (response PostLogin200JSONResponse) VisitPostLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostLogin400JSONResponse Error
+
+func (response PostLogin400JSONResponse) VisitPostLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostLogin401JSONResponse Error
+
+func (response PostLogin401JSONResponse) VisitPostLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostLogin500JSONResponse Error
+
+func (response PostLogin500JSONResponse) VisitPostLoginResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type PostTodosRequestObject struct {
@@ -202,10 +296,7 @@ func (response PostTodos201Response) VisitPostTodosResponse(w http.ResponseWrite
 	return nil
 }
 
-type PostTodos400JSONResponse struct {
-	// Error The error message
-	Error *string `json:"error,omitempty"`
-}
+type PostTodos400JSONResponse Error
 
 func (response PostTodos400JSONResponse) VisitPostTodosResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -214,10 +305,7 @@ func (response PostTodos400JSONResponse) VisitPostTodosResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostTodos500JSONResponse struct {
-	// Error The error message
-	Error *string `json:"error,omitempty"`
-}
+type PostTodos500JSONResponse Error
 
 func (response PostTodos500JSONResponse) VisitPostTodosResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -228,6 +316,9 @@ func (response PostTodos500JSONResponse) VisitPostTodosResponse(w http.ResponseW
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// Login the user with the given username
+	// (POST /login)
+	PostLogin(ctx context.Context, request PostLoginRequestObject) (PostLoginResponseObject, error)
 	// Create a new todo item
 	// (POST /todos)
 	PostTodos(ctx context.Context, request PostTodosRequestObject) (PostTodosResponseObject, error)
@@ -260,6 +351,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// PostLogin operation middleware
+func (sh *strictHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
+	var request PostLoginRequestObject
+
+	var body PostLoginJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostLogin(ctx, request.(PostLoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostLogin")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostLoginResponseObject); ok {
+		if err := validResponse.VisitPostLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // PostTodos operation middleware

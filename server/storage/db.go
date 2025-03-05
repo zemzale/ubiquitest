@@ -20,5 +20,14 @@ func CreateDB(db *sqlx.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to create todos table: %w", err)
 	}
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create todos table: %w", err)
+	}
 	return nil
 }

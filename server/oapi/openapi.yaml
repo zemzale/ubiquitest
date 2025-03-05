@@ -21,23 +21,53 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: The error message
-                    example: The title is required
+                $ref: '#/components/schemas/Error'
         500:
           description: Internal server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: The error message
-                    example: Something went wrong
+                $ref: '#/components/schemas/Error'
+  /login:
+    post:
+      summary: Login the user with the given username
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  description: The username to login with
+                  example: johndoe
+      responses:
+        200:
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -56,5 +86,27 @@ components:
           type: string
           description: The title of the todo item
           example: Buy groceries
+    LoginResponse:
+      type: object
+      required:
+        - username
+        - id
+      properties:
+        username:
+          type: string
+          description: The username of the logged in user
+          example: johndoe
+        id:
+          type: number
+          x-go-type: uint
+          description: The ID of the user
+          example: 1
+    Error: 
+      type: object
+      properties:
+        error:
+          type: string
+          description: The error message
+          example: Something went wrong
 
 

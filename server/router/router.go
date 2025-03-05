@@ -2,6 +2,8 @@ package router
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -58,4 +60,33 @@ func (r *Router) PostTodos(
 	}
 
 	return oapi.PostTodos201Response{}, nil
+}
+
+func (r *Router) PostLogin(
+	ctx context.Context, request oapi.PostLoginRequestObject,
+) (oapi.PostLoginResponseObject, error) {
+	// TODO: Refactor this to be just normal
+	{
+		result := r.db.QueryRow("SELECT id FROM users WHERE username = ?", request.Body.Username)
+		var userID uint
+		if err := result.Scan(&userID); err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+			}
+		}
+		if userID != 0 {
+			return oapi.PostLogin200JSONResponse{Id: userID, Username: request.Body.Username}, nil
+		}
+	}
+
+	{
+		result := r.db.QueryRow("INSERT INTO users (username) VALUES (?) RETURNING id", request.Body.Username)
+
+		var userID uint
+		if err := result.Scan(&userID); err != nil {
+			return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+		}
+
+		return oapi.PostLogin200JSONResponse{Id: userID, Username: request.Body.Username}, nil
+	}
 }

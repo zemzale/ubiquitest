@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -euo pipefail
+
+http POST http://localhost:9999/login username=johndoe
