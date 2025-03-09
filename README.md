@@ -25,6 +25,10 @@ and it's going to setup the dependnecies and run the frontend and backend.
 - [x] I as a user can create to-do items, such as a grocery list. 
 - [ ] I as another user can collaborate in real-time with user - so that we can 
 (for example) edit our family shopping-list together.
+ - [ ] Add
+ - [ ] Edit
+ - [ ] Delete
+
 - [ ] I as a user can mark to-do items as “done” - so that I can avoid clutter and focus on
 things that are still pending.
 - [ ] I as a user can filter the to-do list and view items that were marked as done - so that I
@@ -80,3 +84,8 @@ it works.
 And I know that there is working google library for working with UUID V4 and
 there is one for JS also. Meaning that if I want to create TODO items, they can
 also be create on the frontend without having to worry about ID collisions.
+
+# Bugs
+
+- [ ] When another user creates a new todo it's created two times on the other
+users
