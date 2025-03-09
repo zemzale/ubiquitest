@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
@@ -45,6 +46,11 @@ func Run(db *sqlx.DB) error {
 
 func setupRoutes(r *Router, mux *chi.Mux) {
 	mux.Use(middleware.Logger)
+	mux.Use(cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		Debug:          true,
+	}).Handler)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
 	mux.HandleFunc("/ws/todos", r.WsTodos)
 }
