@@ -23,6 +23,8 @@ tasks:
       - oapi
     cmds:
       - go run main.go
+    watch: true
+
 
   setup-frontend:
     desc: Install the frontend dependencies
