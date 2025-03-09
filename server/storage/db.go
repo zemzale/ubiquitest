@@ -14,7 +14,8 @@ func CreateDB(db *sqlx.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS todos (
 			id TEXT PRIMARY KEY,
-			title TEXT NOT NULL
+			title TEXT NOT NULL,
+			created_by INTEGER NOT NULL
 		);
 	`)
 	if err != nil {
