@@ -30,6 +30,7 @@ function LoginFrom() {
 
         const form = e.target;
         const formData = {
+            //@ts-ignore
             username: form.elements.username.value,
         };
 
