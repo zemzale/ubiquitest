@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine
+FROM golang:1.23
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY ./server .
 
-RUN go build -o /app/app
+RUN CGO_ENABLED=true go build -o /app/app
 
 EXPOSE 8080
 

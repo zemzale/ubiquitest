@@ -1,12 +1,14 @@
 package router
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -37,7 +39,8 @@ func Run(db *sqlx.DB) error {
 	setupRoutes(r, mux)
 	printDebugRoutes(mux)
 
-	if err := http.ListenAndServe(":9999", mux); err != nil {
+	port := cmp.Or(os.Getenv("HTTP_PORT"), ":8080")
+	if err := http.ListenAndServe(port, mux); err != nil {
 		return err
 	}
 
@@ -47,7 +50,7 @@ func Run(db *sqlx.DB) error {
 func setupRoutes(r *Router, mux *chi.Mux) {
 	mux.Use(middleware.Logger)
 	mux.Use(cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
+		AllowedOrigins: []string{"https://ubiquitest.netlify.app"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		Debug:          true,
 	}).Handler)
