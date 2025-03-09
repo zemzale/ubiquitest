@@ -1,13 +1,13 @@
-FROM golang:1.14-alpine
+FROM golang:1.23-alpine
 
 WORKDIR /app
 
-COPY go.mod .
-COPY go.sum .
+COPY ./server/go.mod .
+COPY ./server/go.sum .
 
 RUN go mod download
 
-COPY . .
+COPY ./server .
 
 RUN go build -o /app/app
 

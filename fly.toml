@@ -20,4 +20,4 @@ primary_region = 'arn'
   cpus = 1
 
 [build]
-    dockerfile = "./server/Dockerfile"
+    dockerfile = "./Dockerfile"

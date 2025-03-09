@@ -57,7 +57,7 @@ func (s *Server) handleConnection(c connection) {
 
 			log.Println(taskCreated)
 
-			s.store.tasks.Add(task)
+			// s.store.tasks.Add(task)
 
 			s.broadcast(taskCreated, c)
 		default:
