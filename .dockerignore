@@ -1,0 +1,7 @@
+# flyctl launch added from .gitignore
+**/.task
+
+# flyctl launch added from frontend/.gitignore
+frontend/
+fly.toml
+
