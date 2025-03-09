@@ -1,11 +1,13 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAddItem, useItems } from "~/query/item";
-import { useUser } from "~/query/user";
+import { User, useUser } from "~/query/user";
+import { useCreateWebsocket, useWebsocket, WebSocketProvider } from "~/ws/hook";
 
 export default function Dashboard() {
-    const router = useRouter();
     const query = useUser();
 
     if (query.isLoading) {
@@ -26,20 +28,31 @@ export default function Dashboard() {
             <Head>
                 <title>Dashboard | Ubiquitodo</title>
             </Head>
-            <main className="flex min-h-screen flex-col items-center justify-center">
-                <h1 className="text-6xl font-bold mb-8">Welcome to Ubiquitodo!</h1>
-                <p className="text-2xl mb-8">
-                    You have successfully logged in. {query.data.username}
-                </p>
-                <ListItems />
-                <AddItem />
-                <Link
-                    href="/"
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
-                    Back to Login
-                </Link>
-            </main>
+            <Page user={query.data} />
+        </>
+    );
+}
+
+function Page({ user }: { user: User }) {
+    const ws = useCreateWebsocket(user.username);
+    return (
+        <>
+            <WebSocketProvider value={ws}>
+                <main className="flex min-h-screen flex-col items-center justify-center">
+                    <h1 className="text-6xl font-bold mb-8">Welcome to Ubiquitodo!</h1>
+                    <p className="text-2xl mb-8">
+                        You have successfully logged in. {user.username}
+                    </p>
+                    <ListItems />
+                    <AddItem />
+                    <Link
+                        href="/"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                        Back to Login
+                    </Link>
+                </main>
+            </WebSocketProvider>
         </>
     );
 }
@@ -58,20 +71,11 @@ function Loading() {
 }
 
 function ListItems() {
-    const router = useRouter();
     const query = useItems();
-
-    if (query.isLoading) {
-        return <Loading />
-    }
-    if (query.isError) {
-        router.push("/");
-        return <Error />;
-    }
     if (!query.data) {
-        router.push("/");
-        return <Error />;
+        return <></>;
     }
+
     return <>
         <div className="w-full max-w-md mb-6">
             <h2 className="text-xl font-semibold mb-4">Your Items</h2>
@@ -109,12 +113,20 @@ function AddItem() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const form = e.target;
-        const formData = {
-            title: form.elements.title.value,
-        };
+        const form = e.target as HTMLFormElement;
+        if (!form.elements) {
+            return;
+        }
+        if (!form.elements.namedItem('title')) {
+            return;
+        }
+        const titleElement = form.elements.namedItem('title') as HTMLInputElement;
+        const formData = { title: titleElement.value };
 
         mutation.mutate(formData);
+
+
+        titleElement.value = "";
     }
 
     return <>

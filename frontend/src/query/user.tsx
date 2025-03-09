@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { env } from '~/env'
 
-type User = {
+export type User = {
     username: string;
     id: number;
 }
