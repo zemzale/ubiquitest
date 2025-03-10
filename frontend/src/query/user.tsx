@@ -9,7 +9,11 @@ export type User = {
 export function useUser() {
     return useQuery({
         queryKey: ['user'],
-        queryFn: () => JSON.parse(localStorage.getItem('user') as string) as User,
+        queryFn: () => {
+            const userData = localStorage.getItem('user');
+            if (!userData) return null;
+            return JSON.parse(userData) as User;
+        },
     });
 }
 

@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { useAddItem, useCompleteItem, useItems } from "~/query/item";
 import { User, useUser } from "~/query/user";
@@ -166,6 +167,13 @@ function Error() {
 }
 
 function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
+    const router = useRouter();
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('todos');
+        router.push('/');
+    };
+
     return (
         <nav className="fixed top-0 left-0 right-0 bg-white shadow-md p-4 z-10">
             <div className="container mx-auto flex justify-between items-center">
@@ -178,12 +186,12 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
                         Add Task
                     </button>
                     <p className="mr-4">Logged in as: <span className="font-semibold">{user.username}</span></p>
-                    <Link
-                        href="/"
+                    <button
+                        onClick={handleLogout}
                         className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm"
                     >
                         Logout
-                    </Link>
+                    </button>
                 </div>
             </div>
         </nav>
