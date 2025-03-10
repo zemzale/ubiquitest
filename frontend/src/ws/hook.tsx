@@ -14,9 +14,18 @@ export function useCreateWebsocket(user: string) {
         });
 
         ws.addEventListener("message", (event) => {
+            const message = JSON.parse(event.data);
             const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-            todos.push(JSON.parse(event.data));
-            localStorage.setItem("todos", JSON.stringify(todos));
+            
+            if (message.type === 'task_created') {
+                todos.push(message.data);
+                localStorage.setItem("todos", JSON.stringify(todos));
+            } else if (message.type === 'task_done') {
+                const updatedTodos = todos.map(todo => 
+                    todo.id === message.data.id ? { ...todo, completed: true } : todo
+                );
+                localStorage.setItem("todos", JSON.stringify(updatedTodos));
+            }
 
             queryClient.invalidateQueries({ queryKey: ['todos'] });
         });

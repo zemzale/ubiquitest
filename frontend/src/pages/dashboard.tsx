@@ -1,7 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useAddItem, useItems } from "~/query/item";
+import { useAddItem, useCompleteItem, useItems } from "~/query/item";
 import { User, useUser } from "~/query/user";
 import { useCreateWebsocket, WebSocketProvider } from "~/ws/hook";
 
@@ -68,9 +68,15 @@ function Loading() {
 
 function ListItems() {
     const query = useItems();
+    const completeMutation = useCompleteItem();
+    
     if (!query.data) {
         return <></>;
     }
+
+    const handleComplete = (id: string) => {
+        completeMutation.mutate(id);
+    };
 
     return <>
         <div className="w-full max-w-md mb-6 mt-6">
@@ -78,13 +84,28 @@ function ListItems() {
             <ul className="space-y-3">
                 {query.data.map((item) => (
                     <li key={item.id}>
-                        <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200">
+                        <div className={`bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 ${item.completed ? 'opacity-60' : ''}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                     <div>
-                                        <h3 className="font-medium text-gray-800">{item.title}</h3>
+                                        <h3 className={`font-medium ${item.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                                            {item.title}
+                                        </h3>
                                     </div>
                                 </div>
+                                {!item.completed && (
+                                    <button 
+                                        onClick={() => handleComplete(item.id)}
+                                        className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
+                                    >
+                                        Complete
+                                    </button>
+                                )}
+                                {item.completed && (
+                                    <span className="ml-2 text-green-600 text-sm font-medium">
+                                        ✓ Completed
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </li>
