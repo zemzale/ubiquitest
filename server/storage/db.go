@@ -15,7 +15,9 @@ func CreateDB(db *sqlx.DB) error {
 		CREATE TABLE IF NOT EXISTS todos (
 			id TEXT PRIMARY KEY,
 			title TEXT NOT NULL,
-			created_by INTEGER NOT NULL
+			created_by INTEGER NOT NULL, 
+			completed BOOLEAN NOT NULL DEFAULT false,
+			completed_by INTEGER NULL
 		);
 	`)
 	if err != nil {

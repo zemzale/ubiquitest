@@ -12,6 +12,7 @@ type EventType string
 const (
 	EventTypeTaskCreated      EventType = "task_created"
 	EventTypeTaskStoreFailure EventType = "task_store_error"
+	EventTypeTaskUpdated      EventType = "task_updated"
 )
 
 type Event struct {
@@ -21,6 +22,12 @@ type Event struct {
 
 func (e Event) AsEventTaskCreated() (EventTaskCreated, error) {
 	var data EventTaskCreated
+	err := json.Unmarshal(e.Data, &data)
+	return data, err
+}
+
+func (e Event) AsEventTaskUpdated() (EventTaskUpdated, error) {
+	var data EventTaskUpdated
 	err := json.Unmarshal(e.Data, &data)
 	return data, err
 }
@@ -41,6 +48,12 @@ type EventTaskCreated struct {
 	Id        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
 	CreatedBy uint      `json:"created_by"`
+}
+
+type EventTaskUpdated struct {
+	Id        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	Completed bool      `json:"completed"`
 }
 
 type EventTaskStoreFailure struct {

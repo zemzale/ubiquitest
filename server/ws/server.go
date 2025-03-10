@@ -19,11 +19,20 @@ type connection struct {
 type Server struct {
 	connections []connection
 
-	storeTask *tasks.Store
+	storeTask  *tasks.Store
+	updateTask *tasks.Update
+	db         *sqlx.DB
 }
 
 func NewServer(db *sqlx.DB) *Server {
-	return &Server{connections: make([]connection, 0), storeTask: tasks.NewStore(db)}
+	return &Server{
+		connections: make([]connection, 0),
+
+		db: db,
+
+		storeTask:  tasks.NewStore(db),
+		updateTask: tasks.NewUpdate(db),
+	}
 }
 
 func (s *Server) Close() {
@@ -85,6 +94,39 @@ func (s *Server) handleConnection(c connection) {
 
 			if err := s.storeTask.Run(task); err != nil {
 				log.Println("failed to store task ", err)
+				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
+					log.Println("failed to reply with error ", replyErr)
+				}
+			}
+
+			s.broadcast(event, c)
+
+		case EventTypeTaskUpdated:
+			log.Println("received task_updated event from user ", c.user)
+			taskUpdated, err := event.AsEventTaskUpdated()
+			if err != nil {
+				log.Println("failed to parse task_updated event ", err, " ", string(message))
+				continue
+			}
+
+			log.Println(taskUpdated)
+
+			task := tasks.Task{
+				ID:        taskUpdated.Id,
+				Title:     taskUpdated.Title,
+				Completed: taskUpdated.Completed,
+			}
+
+			// TODO: Change to have channles based on user id instead of username
+
+			var userID uint
+			if err := s.db.Get(&userID, "SELECT id FROM users WHERE username = ?", c.user); err != nil {
+				log.Println("failed to get user id ", err)
+				continue
+			}
+
+			if err := s.updateTask.Run(task, userID); err != nil {
+				log.Println("failed to update task ", err)
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 					log.Println("failed to reply with error ", replyErr)
 				}

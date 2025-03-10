@@ -27,25 +27,23 @@ export function useCreateWebsocket(user: string) {
                     }
                     todos.push(message.data);
                     localStorage.setItem("todos", JSON.stringify(todos));
-                } else if (message.type === 'task_done') {
-                    // The message.data should be the full item with completed=true
+                } else if (message.type === 'task_updated') {
                     const taskId = message.data.id;
 
                     if (!taskId) {
-                        console.error('Missing task ID in task_done message:', message);
+                        console.error(`Missing task ID in ${message.type} message:`, message);
                         return;
                     }
 
                     const taskExists = todos.some(todo => todo.id === taskId);
 
                     if (!taskExists) {
-                        console.warn('Received task_done for unknown task:', taskId);
+                        console.warn(`Received ${message.type} for unknown task:`, taskId);
                     }
+
                     const updatedTodos = todos.map(todo => {
                         if (todo.id === taskId) {
-                            console.log('Marking task as completed:', todo.id);
-                            // Use the data from the message or ensure completed is true
-                            return { ...todo, ...message.data, completed: true };
+                            return { ...todo, ...message.data };
                         }
                         return todo;
                     });

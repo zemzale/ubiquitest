@@ -10,7 +10,6 @@ export type Item = {
     created_by: number;
 }
 
-
 export function useItems() {
     return useQuery({
         queryKey: ['todos'],
@@ -37,13 +36,24 @@ export function useAddItem() {
     })
 }
 
+export function useUpdateTask() {
+    const ws = useWebsocket();
+    const client = useQueryClient();
+    return useMutation({
+        mutationFn: updateTask(ws, client),
+        onSuccess: () => {
+            client.invalidateQueries({ queryKey: ['todos'] });
+            console.log('Invalidated todos query after task update');
+        },
+    });
+}
+
 export function useCompleteItem() {
     const ws = useWebsocket();
     const client = useQueryClient();
     return useMutation({
         mutationFn: completeItem(ws, client),
         onSuccess: () => {
-            // Explicitly invalidate the todos query to force a refresh
             client.invalidateQueries({ queryKey: ['todos'] });
             console.log('Invalidated todos query after completion');
         },
@@ -73,39 +83,46 @@ function postItem(ws: WebSocket, user: User) {
     }
 }
 
-function completeItem(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient>) {
-    return async (itemId: string) => {
-        console.log('Sending task_done WebSocket message for item:', itemId);
-        
-        // Get the item data from localStorage to include in the message
+function updateTask(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient>) {
+    return async ({ id, changes }: { id: string, changes: Partial<Item> }) => {
+        console.log('Updating task:', id, 'with changes:', changes);
         const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-        const item = todos.find(todo => todo.id === itemId);
-        
+        const item = todos.find(todo => todo.id === id);
+
         if (!item) {
-            console.error('Cannot complete item, not found in localStorage:', itemId);
+            console.error('Cannot update item, not found in localStorage:', id);
             return;
         }
-        
-        // Update the item to mark it as completed
-        const completedItem = { ...item, completed: true };
-        
-        // Send a complete message with the full item data
-        ws.send(JSON.stringify({
-            type: 'task_done',
-            data: completedItem,
-        }));
-        console.log('Sent task_done message with data:', completedItem);
+        const updatedItem = { ...item, ...changes };
 
-        // Update the item in localStorage
+        ws.send(JSON.stringify({
+            type: 'task_updated',
+            data: updatedItem,
+        }));
+        console.log('Sent task_updated message with data:', updatedItem);
+
         const updatedTodos = todos.map(todo =>
-            todo.id === itemId ? completedItem : todo
+            todo.id === id ? updatedItem : todo
         );
         localStorage.setItem("todos", JSON.stringify(updatedTodos));
         console.log('Updated todos in localStorage:', updatedTodos);
-        
+
         // Explicitly invalidate the query to trigger a re-fetch
         queryClient.invalidateQueries({ queryKey: ['todos'] });
-        console.log('Invalidated todos query from completeItem function');
+        console.log('Invalidated todos query from updateTask function');
+    }
+}
+
+// Use the generic updateTask function for completing items
+function completeItem(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient>) {
+    const updateTaskFn = updateTask(ws, queryClient);
+
+    return async (itemId: string) => {
+        console.log('Completing task:', itemId);
+        return updateTaskFn({
+            id: itemId,
+            changes: { completed: true }
+        });
     }
 }
 
