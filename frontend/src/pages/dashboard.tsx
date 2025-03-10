@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { useAddItem, useCompleteItem, useItems } from "~/query/item";
-import { User, useUser } from "~/query/user";
+import { User, useUser, useUserById } from "~/query/user";
 import { useCreateWebsocket, WebSocketProvider } from "~/ws/hook";
 
 export default function Dashboard() {
@@ -103,7 +103,7 @@ function ListItems() {
                                     <div>
                                         <h3 className="font-medium text-gray-800">{item.title}</h3>
                                         {item.created_by && (
-                                            <p className="text-xs text-gray-500">Created by: {item.created_by}</p>
+                                            <TaskCreator userId={item.created_by} />
                                         )}
                                     </div>
                                 </div>
@@ -139,7 +139,7 @@ function ListItems() {
                                             <div>
                                                 <h3 className="font-medium text-gray-500 line-through">{item.title}</h3>
                                                 {item.created_by && (
-                                                    <p className="text-xs text-gray-400">Created by: {item.created_by}</p>
+                                                    <TaskCreator userId={item.created_by} />
                                                 )}
                                             </div>
                                         </div>
@@ -155,6 +155,20 @@ function ListItems() {
             </ul>
         </div>
     </>;
+}
+
+function TaskCreator({ userId }: { userId: number }) {
+    const { data: user, isLoading, isError } = useUserById(userId);
+    
+    if (isLoading) {
+        return <p className="text-xs text-gray-500">Loading creator...</p>;
+    }
+    
+    if (isError || !user) {
+        return <p className="text-xs text-gray-500">Unknown creator</p>;
+    }
+    
+    return <p className="text-xs text-gray-500">Created by: {user.username}</p>;
 }
 
 function Error() {

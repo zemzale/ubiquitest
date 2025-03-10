@@ -28,6 +28,15 @@ export function useLogin() {
     })
 }
 
+export function useUserById(userId: string | number | undefined) {
+    return useQuery({
+        queryKey: ['user', userId],
+        queryFn: () => fetchUserById(userId),
+        enabled: !!userId, // Only run the query if userId is provided
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    });
+}
+
 async function postLogin(body: { username: string }) {
     return fetch(`${env.NEXT_PUBLIC_API_URL}/login`, {
         method: 'POST',
@@ -37,5 +46,17 @@ async function postLogin(body: { username: string }) {
         body: JSON.stringify(body),
     })
         .then((res) => res.json())
+}
+
+async function fetchUserById(userId: string | number | undefined) {
+    if (!userId) return null;
+    
+    return fetch(`${env.NEXT_PUBLIC_API_URL}/user/${userId}`)
+        .then((res) => {
+            if (!res.ok) {
+                throw new Error('Failed to fetch user');
+            }
+            return res.json();
+        });
 }
 
