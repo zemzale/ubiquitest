@@ -149,3 +149,15 @@ func (r *Router) WsTodos(writer http.ResponseWriter, request *http.Request) {
 
 	r.ws.TakeConnection(username, conn)
 }
+
+func (r *Router) GetUserId(ctx context.Context, request oapi.GetUserIdRequestObject) (oapi.GetUserIdResponseObject, error) {
+	var user struct {
+		Id       uint   `db:"id"`
+		Username string `db:"username"`
+	}
+	err := r.db.Get(&user, "SELECT * FROM users where id=?", request.Id)
+	if err != nil {
+		return oapi.GetUserId500JSONResponse{Error: lo.ToPtr("Internal server error")}, nil
+	}
+	return oapi.GetUserId200JSONResponse{Id: user.Id, Username: user.Username}, nil
+}

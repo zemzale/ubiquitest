@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
@@ -64,6 +65,9 @@ type ServerInterface interface {
 	// Create a new todo item
 	// (POST /todos)
 	PostTodos(w http.ResponseWriter, r *http.Request)
+	// Get user by id
+	// (GET /user/{id})
+	GetUserId(w http.ResponseWriter, r *http.Request, id uint)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -85,6 +89,12 @@ func (_ Unimplemented) GetTodos(w http.ResponseWriter, r *http.Request) {
 // Create a new todo item
 // (POST /todos)
 func (_ Unimplemented) PostTodos(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get user by id
+// (GET /user/{id})
+func (_ Unimplemented) GetUserId(w http.ResponseWriter, r *http.Request, id uint) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -130,6 +140,31 @@ func (siw *ServerInterfaceWrapper) PostTodos(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostTodos(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserId operation middleware
+func (siw *ServerInterfaceWrapper) GetUserId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "id" -------------
+	var id uint
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -261,6 +296,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/todos", wrapper.PostTodos)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/user/{id}", wrapper.GetUserId)
+	})
 
 	return r
 }
@@ -368,6 +406,50 @@ func (response PostTodos500JSONResponse) VisitPostTodosResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetUserIdRequestObject struct {
+	Id uint `json:"id"`
+}
+
+type GetUserIdResponseObject interface {
+	VisitGetUserIdResponse(w http.ResponseWriter) error
+}
+
+type GetUserId200JSONResponse LoginResponse
+
+func (response GetUserId200JSONResponse) VisitGetUserIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserId400JSONResponse Error
+
+func (response GetUserId400JSONResponse) VisitGetUserIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserId401JSONResponse Error
+
+func (response GetUserId401JSONResponse) VisitGetUserIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserId500JSONResponse Error
+
+func (response GetUserId500JSONResponse) VisitGetUserIdResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// Login the user with the given username
@@ -379,6 +461,9 @@ type StrictServerInterface interface {
 	// Create a new todo item
 	// (POST /todos)
 	PostTodos(ctx context.Context, request PostTodosRequestObject) (PostTodosResponseObject, error)
+	// Get user by id
+	// (GET /user/{id})
+	GetUserId(ctx context.Context, request GetUserIdRequestObject) (GetUserIdResponseObject, error)
 }
 
 type StrictHandlerFunc = strictnethttp.StrictHTTPHandlerFunc
@@ -489,6 +574,32 @@ func (sh *strictHandler) PostTodos(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostTodosResponseObject); ok {
 		if err := validResponse.VisitPostTodosResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUserId operation middleware
+func (sh *strictHandler) GetUserId(w http.ResponseWriter, r *http.Request, id uint) {
+	var request GetUserIdRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserId(ctx, request.(GetUserIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserIdResponseObject); ok {
+		if err := validResponse.VisitGetUserIdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

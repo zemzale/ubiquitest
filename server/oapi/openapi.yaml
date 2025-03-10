@@ -85,6 +85,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /user/{id}:
+    get:
+      summary: Get user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: number
+            x-go-type: uint
+          description: The ID of the user
+          example: 1
+      responses:
+        200:
+          description: Found user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
