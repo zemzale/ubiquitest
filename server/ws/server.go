@@ -66,10 +66,21 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 
 func (s *Server) handleConnection(c connection) {
 	for {
-		_, message, err := c.conn.ReadMessage()
+		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
 			log.Printf("failed to read message for user '%s' with error '%s' \n", c.user, err)
+			s.removeConnection(c)
 			break
+		}
+		if messageType == websocket.CloseMessage {
+			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user)
+			s.removeConnection(c)
+			break
+		}
+
+		if messageType != websocket.TextMessage {
+			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user)
+			continue
 		}
 
 		var event Event
@@ -170,5 +181,25 @@ func (s *Server) reply(c connection, replyEventType EventType, replyEventData an
 		return c.conn.WriteJSON(event)
 	default:
 		return fmt.Errorf("unknown replyEventType %s", replyEventType)
+	}
+}
+
+func (s *Server) removeConnection(c connection) {
+	s.rwmutex.Lock()
+	defer s.rwmutex.Unlock()
+	for i, conn := range s.connections {
+		if conn.user != c.user {
+			continue
+		}
+		if err := conn.conn.Close(); err != nil {
+			log.Printf("failed to close connection for user '%s' with error '%s' \n", c.user, err)
+		}
+
+		if len(s.connections) == 1 {
+			s.connections = make([]connection, 0)
+			return
+		}
+		s.connections = slices.Delete(s.connections, i, i+1)
+		break
 	}
 }

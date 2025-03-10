@@ -53,7 +53,6 @@ func setupRoutes(r *Router, mux *chi.Mux) {
 	mux.Use(cors.New(cors.Options{
 		AllowedOrigins: []string{"https://ubiquitest.netlify.app"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		Debug:          true,
 	}).Handler)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
 	mux.HandleFunc("/ws/todos", r.WsTodos)
