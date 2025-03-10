@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"slices"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
@@ -18,6 +19,7 @@ type connection struct {
 
 type Server struct {
 	connections []connection
+	rwmutex     *sync.RWMutex
 
 	storeTask  *tasks.Store
 	updateTask *tasks.Update
@@ -26,7 +28,7 @@ type Server struct {
 
 func NewServer(db *sqlx.DB) *Server {
 	return &Server{
-		connections: make([]connection, 0),
+		connections: make([]connection, 0), rwmutex: &sync.RWMutex{},
 
 		db: db,
 
@@ -42,13 +44,14 @@ func (s *Server) Close() {
 }
 
 func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
+	s.rwmutex.Lock()
+	defer s.rwmutex.Unlock()
 	c := connection{conn: conn, user: username}
 
 	for i, c := range s.connections {
 		if c.user != username {
 			continue
 		}
-
 		if err := c.conn.Close(); err != nil {
 			log.Printf("failed to close connection for user '%s' with error '%s' \n", c.user, err)
 		}
