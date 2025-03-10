@@ -16,7 +16,7 @@ func NewList(db *sqlx.DB) *List {
 }
 
 func (l *List) Run() ([]Task, error) {
-	rows, err := l.db.Query("SELECT id, title, created_by FROM todos")
+	rows, err := l.db.Query("SELECT id, title, created_by, completed FROM todos")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query todos: %w", err)
 	}
@@ -29,7 +29,8 @@ func (l *List) Run() ([]Task, error) {
 		var id string
 		var title string
 		var createdBy uint
-		if err := rows.Scan(&id, &title, &createdBy); err != nil {
+		var completed bool
+		if err := rows.Scan(&id, &title, &createdBy, &completed); err != nil {
 			return nil, fmt.Errorf("failed to scan todos: %w", err)
 		}
 
@@ -42,7 +43,7 @@ func (l *List) Run() ([]Task, error) {
 			users[createdBy] = username
 		}
 
-		todos = append(todos, Task{ID: uuid.MustParse(id), Title: title, CreatedBy: createdBy})
+		todos = append(todos, Task{ID: uuid.MustParse(id), Title: title, CreatedBy: createdBy, Completed: completed})
 	}
 
 	return todos, nil

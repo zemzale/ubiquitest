@@ -64,7 +64,7 @@ func (s *Server) handleConnection(c connection) {
 			break
 		}
 		if messageType == websocket.CloseMessage {
-			log.Printf("received close for user '%s' \n", messageType, c.user)
+			log.Printf("received close for user '%s' \n", c.user)
 			s.removeConnection(c)
 			break
 		}
@@ -138,6 +138,11 @@ func (s *Server) handleConnection(c connection) {
 			}
 
 			s.broadcast(event, c)
+		case EventTypePing:
+			log.Println("received ping from user ", c.user)
+			if err := s.reply(c, EventTypePing, nil); err != nil {
+				log.Println("failed to reply with error ", err)
+			}
 		default:
 			log.Println("unknown event type ", event.EventType)
 			log.Println(string(message))
@@ -170,6 +175,8 @@ func (s *Server) reply(c connection, replyEventType EventType, replyEventData an
 		}
 
 		return c.conn.WriteJSON(event)
+	case EventTypePing:
+		return c.conn.WriteJSON(Event{EventType: EventTypePong, Data: nil})
 	default:
 		return fmt.Errorf("unknown replyEventType %s", replyEventType)
 	}

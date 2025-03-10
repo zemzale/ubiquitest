@@ -10,6 +10,8 @@ import (
 type EventType string
 
 const (
+	EventTypePing             EventType = "ping"
+	EventTypePong             EventType = "pong"
 	EventTypeTaskCreated      EventType = "task_created"
 	EventTypeTaskStoreFailure EventType = "task_store_error"
 	EventTypeTaskUpdated      EventType = "task_updated"

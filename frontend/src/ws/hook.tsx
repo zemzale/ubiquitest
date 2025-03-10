@@ -23,6 +23,9 @@ const MAX_RECONNECT_DELAY_MS = 30000;
 const RECONNECT_BACKOFF_FACTOR = 3;
 const MAX_RECONNECT_ATTEMPTS = 3;
 
+// Ping configuration (send a ping every second to keep connection alive)
+const PING_INTERVAL_MS = 1000;
+
 export function useCreateWebsocket(user: string): EnhancedWebSocket {
     const queryClient = useQueryClient();
     const [status, setStatus] = useState<WebSocketStatus>('connecting');
@@ -30,6 +33,7 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
 
     // Use refs to maintain state across re-renders and in event handlers
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const reconnectAttemptsRef = useRef(0);
     const currentDelayRef = useRef(DEFAULT_RECONNECT_DELAY_MS);
 
@@ -54,11 +58,34 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                 setStatus('connected');
                 reconnectAttemptsRef.current = 0;
                 currentDelayRef.current = DEFAULT_RECONNECT_DELAY_MS;
+                
+                // Setup ping interval to keep connection alive
+                if (pingIntervalRef.current) {
+                    clearInterval(pingIntervalRef.current);
+                }
+                
+                // Keep track of ping count to reduce logging
+                let pingCount = 0;
+                
+                pingIntervalRef.current = setInterval(() => {
+                    if (newWs.readyState === WebSocket.OPEN) {
+                        // Send a ping message to keep the connection alive
+                        newWs.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+                        
+                    }
+                }, PING_INTERVAL_MS);
             });
 
             newWs.addEventListener('close', (event) => {
                 console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
                 setStatus('disconnected');
+                
+                // Clear the ping interval
+                if (pingIntervalRef.current) {
+                    clearInterval(pingIntervalRef.current);
+                    pingIntervalRef.current = null;
+                }
+                
                 // Only attempt reconnects for unexpected disconnects
                 if (event.code !== 1000) { // 1000 is normal closure
                     scheduleReconnect();
@@ -192,6 +219,10 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
 
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
+            }
+            if (pingIntervalRef.current) {
+                clearInterval(pingIntervalRef.current);
+                pingIntervalRef.current = null;
             }
         };
     }, [user]); // Recreate socket when user changes

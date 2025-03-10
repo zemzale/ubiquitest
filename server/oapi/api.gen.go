@@ -32,6 +32,9 @@ type LoginResponse struct {
 
 // Todo defines model for Todo.
 type Todo struct {
+	// Completed Whether the todo item is completed
+	Completed bool `json:"completed"`
+
 	// CreatedBy The user id of the user who create the todo item
 	CreatedBy uint `json:"created_by"`
 

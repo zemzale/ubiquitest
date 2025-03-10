@@ -131,6 +131,7 @@ components:
         - id
         - title
         - created_by
+        - completed
       properties:
         id:
           type: string
@@ -146,6 +147,10 @@ components:
           x-go-type: uint
           description: The user id of the user who create the todo item
           example: 1
+        completed:
+          type: boolean
+          description: Whether the todo item is completed
+          example: false
     LoginResponse:
       type: object
       required:
