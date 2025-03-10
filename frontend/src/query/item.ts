@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid';
 import { useWebsocket } from '~/ws/hook';
+import { User } from './user';
 
 export type Item = {
     title: string;
     id: string;
     completed?: boolean;
+    created_by: number;
 }
 
 
@@ -19,10 +21,12 @@ export function useItems() {
 }
 
 export function useAddItem() {
-    const ws = useWebsocket()
+    const ws = useWebsocket();
     const client = useQueryClient();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
     return useMutation({
-        mutationFn: postItem(ws),
+        mutationFn: postItem(ws, user),
         onSuccess: () => {
             client.invalidateQueries({ queryKey: ['todos'] });
         },
@@ -40,14 +44,15 @@ export function useCompleteItem() {
     })
 }
 
-type NewItem = Omit<Item, 'id'>;
+type NewItem = Omit<Item, 'id' | 'created_by'>;
 
-function postItem(ws: WebSocket) {
+function postItem(ws: WebSocket, user: User) {
     return async (body: NewItem) => {
         const id = uuidv4();
         const item: Item = {
             id: id,
             completed: false,
+            created_by: user.id,
             ...body,
         };
 
@@ -70,7 +75,7 @@ function completeItem(ws: WebSocket) {
         }));
 
         const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-        const updatedTodos = todos.map(todo => 
+        const updatedTodos = todos.map(todo =>
             todo.id === itemId ? { ...todo, completed: true } : todo
         );
         localStorage.setItem("todos", JSON.stringify(updatedTodos));

@@ -101,6 +101,9 @@ function ListItems() {
                                 <div className="flex items-center">
                                     <div>
                                         <h3 className="font-medium text-gray-800">{item.title}</h3>
+                                        {item.created_by && (
+                                            <p className="text-xs text-gray-500">Created by: {item.created_by}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <button
@@ -134,6 +137,9 @@ function ListItems() {
                                         <div className="flex items-center">
                                             <div>
                                                 <h3 className="font-medium text-gray-500 line-through">{item.title}</h3>
+                                                {item.created_by && (
+                                                    <p className="text-xs text-gray-400">Created by: {item.created_by}</p>
+                                                )}
                                             </div>
                                         </div>
                                         <span className="ml-2 text-green-600 text-sm font-medium">
