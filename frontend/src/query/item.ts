@@ -21,8 +21,6 @@ export function useItems() {
         },
         // Ensure the query refetches when invalidated
         staleTime: 0,
-        // Don't cache the result for long
-        cacheTime: 5000,
     });
 }
 
