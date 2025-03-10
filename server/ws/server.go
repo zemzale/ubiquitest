@@ -2,10 +2,12 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"slices"
 
 	"github.com/gorilla/websocket"
+	"github.com/zemzale/ubiquitest/domain/tasks"
 )
 
 type connection struct {
@@ -15,6 +17,8 @@ type connection struct {
 
 type Server struct {
 	connections []connection
+
+	storeTask *tasks.Store
 }
 
 func NewServer() *Server {
@@ -72,7 +76,16 @@ func (s *Server) handleConnection(c connection) {
 
 			log.Println(taskCreated)
 
-			// s.store.tasks.Add(task)
+			if err := s.storeTask.Run(tasks.Task{
+				ID:       taskCreated.Id,
+				Title:    taskCreated.Title,
+				CreateBy: c.user,
+			}); err != nil {
+				log.Println("failed to store task ", err)
+				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
+					log.Println("failed to reply with error ", replyErr)
+				}
+			}
 
 			s.broadcast(taskCreated, c)
 		default:
@@ -91,5 +104,23 @@ func (s *Server) broadcast(taskCreated EventTaskCreated, broadcaster connection)
 		if err := conn.conn.WriteJSON(taskCreated); err != nil {
 			log.Println(err)
 		}
+	}
+}
+
+func (s *Server) reply(c connection, replyEventType EventType, replyEventData any) error {
+	switch replyEventType {
+	case EventTypeTaskStoreFailure:
+		e, ok := replyEventData.(EventTaskStoreFailure)
+		if !ok {
+			return fmt.Errorf("failed to cast replyEventData to EventTaskStoreFailure")
+		}
+		event, err := FromEventStoreFailure(e)
+		if err != nil {
+			return fmt.Errorf("failed to create Event from EventTaskStoreFailure: %w", err)
+		}
+
+		return c.conn.WriteJSON(event)
+	default:
+		return fmt.Errorf("unknown replyEventType %s", replyEventType)
 	}
 }

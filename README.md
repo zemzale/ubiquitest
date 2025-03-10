@@ -87,5 +87,6 @@ also be create on the frontend without having to worry about ID collisions.
 
 # Bugs
 
-- [ ] When another user creates a new todo it's created two times on the other
-users
+- [x] When another user creates a new todo it's created two times on the other
+users 
+    Fixed by making sure that thre is only one channel per user
