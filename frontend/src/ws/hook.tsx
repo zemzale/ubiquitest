@@ -25,8 +25,13 @@ export function useCreateWebsocket(user: string) {
                     if (exists) {
                         console.warn('Received task_created for existing task:', message.data.id);
                     }
-                    todos.push(message.data);
+
+                    // Handle both with and without parent_id
+                    const newTask = message.data;
+                    todos.push(newTask);
                     localStorage.setItem("todos", JSON.stringify(todos));
+                    console.log('Task created with ID:', newTask.id,
+                        newTask.parent_id ? `as a subtask of ${newTask.parent_id}` : 'as a top-level task');
                 } else if (message.type === 'task_updated') {
                     const taskId = message.data.id;
 

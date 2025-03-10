@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
-import { useAddItem, useCompleteItem, useItems } from "~/query/item";
+import { useAddItem, useCompleteItem, useItems, ItemWithChildren, organizeItemsIntoTree } from "~/query/item";
 import { User, useUser, useUserById } from "~/query/user";
 import { useCreateWebsocket, WebSocketProvider } from "~/ws/hook";
 
@@ -91,31 +91,22 @@ function ListItems() {
     const completedItems = sortedItems.filter(item => item.completed);
     const hasCompletedItems = completedItems.length > 0;
 
+    // Organize active items into a tree structure
+    const activeItemsTree = organizeItemsIntoTree(activeItems);
+    const completedItemsTree = organizeItemsIntoTree(completedItems);
+
     return <>
         <div className="w-full max-w-md mb-6 mt-6">
             <h2 className="text-xl font-semibold mb-4">Your Items</h2>
             <ul className="space-y-3">
-                {activeItems.map((item) => (
-                    <li key={item.id}>
-                        <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <div>
-                                        <h3 className="font-medium text-gray-800">{item.title}</h3>
-                                        {item.created_by && (
-                                            <TaskCreator userId={item.created_by} />
-                                        )}
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => handleComplete(item.id)}
-                                    className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
-                                >
-                                    Complete
-                                </button>
-                            </div>
-                        </div>
-                    </li>
+                {activeItemsTree.map((item) => (
+                    <TaskItem
+                        key={item.id}
+                        item={item}
+                        level={0}
+                        onComplete={handleComplete}
+                        isCompleted={false}
+                    />
                 ))}
 
                 {hasCompletedItems && (
@@ -131,24 +122,14 @@ function ListItems() {
                             </div>
                         </li>
 
-                        {completedItems.map((item) => (
-                            <li key={item.id}>
-                                <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 opacity-60">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            <div>
-                                                <h3 className="font-medium text-gray-500 line-through">{item.title}</h3>
-                                                {item.created_by && (
-                                                    <TaskCreator userId={item.created_by} />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="ml-2 text-green-600 text-sm font-medium">
-                                            ✓ Completed
-                                        </span>
-                                    </div>
-                                </div>
-                            </li>
+                        {completedItemsTree.map((item) => (
+                            <TaskItem
+                                key={item.id}
+                                item={item}
+                                level={0}
+                                onComplete={handleComplete}
+                                isCompleted={true}
+                            />
                         ))}
                     </>
                 )}
@@ -157,17 +138,103 @@ function ListItems() {
     </>;
 }
 
+// Enhanced component that renders a task and its subtasks recursively
+function TaskItem({
+    item,
+    level,
+    onComplete,
+    isCompleted
+}: {
+    item: ItemWithChildren,
+    level: number,
+    onComplete: (id: string) => void,
+    isCompleted: boolean
+}) {
+    const hasChildren = item.children && item.children.length > 0;
+    const [showAddSubtask, setShowAddSubtask] = useState(false);
+
+    // Calculate indentation based on nesting level (only apply after level 0)
+    const indentClass = level > 0 ? `ml-${Math.min(level * 4, 12)}` : '';
+
+    return (
+        <>
+            <li key={item.id} className={indentClass}>
+                <div className={`bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 ${isCompleted ? 'opacity-60' : ''}`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                            <div>
+                                <h3 className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                                    {item.title}
+                                </h3>
+                                {item.created_by && (
+                                    <TaskCreator userId={item.created_by} />
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex space-x-2">
+                            {!isCompleted && (
+                                <button
+                                    onClick={() => setShowAddSubtask(true)}
+                                    className="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-sm"
+                                    title="Add subtask"
+                                >
+                                    + Subtask
+                                </button>
+                            )}
+                            {!isCompleted ? (
+                                <button
+                                    onClick={() => onComplete(item.id)}
+                                    className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
+                                >
+                                    Complete
+                                </button>
+                            ) : (
+                                <span className="ml-2 text-green-600 text-sm font-medium">
+                                    ✓ Completed
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            {/* Modal for adding subtask */}
+            {showAddSubtask && (
+                <AddItemModal
+                    onClose={() => setShowAddSubtask(false)}
+                    parentId={item.id}
+                />
+            )}
+
+            {/* Render children if any */}
+            {hasChildren && (
+                <ul className="space-y-3 mt-3">
+                    {item.children.map((child: any) => (
+                        <TaskItem
+                            key={child.id}
+                            item={child}
+                            level={level + 1}
+                            onComplete={onComplete}
+                            isCompleted={isCompleted}
+                        />
+                    ))}
+                </ul>
+            )}
+        </>
+    );
+}
+
 function TaskCreator({ userId }: { userId: number }) {
     const { data: user, isLoading, isError } = useUserById(userId);
-    
+
     if (isLoading) {
         return <p className="text-xs text-gray-500">Loading creator...</p>;
     }
-    
+
     if (isError || !user) {
         return <p className="text-xs text-gray-500">Unknown creator</p>;
     }
-    
+
     return <p className="text-xs text-gray-500">Created by: {user.username}</p>;
 }
 
@@ -213,8 +280,9 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
 }
 
 
-function AddItemModal({ onClose }: { onClose: () => void }) {
+function AddItemModal({ onClose, parentId }: { onClose: () => void, parentId?: string }) {
     const mutation = useAddItem();
+    const { data: items } = useItems();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -233,11 +301,17 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
         if (!form.elements) {
             return;
         }
-        if (!form.elements.namedItem('title')) {
-            return;
-        }
+
         const titleElement = form.elements.namedItem('title') as HTMLInputElement;
-        const formData = { title: titleElement.value };
+        const parentElement = form.elements.namedItem('parent_id') as HTMLSelectElement;
+
+        // Use either the provided parentId or the selected one from dropdown
+        const selectedParentId = parentId || (parentElement?.value !== "none" ? parentElement?.value : undefined);
+
+        const formData = {
+            title: titleElement.value,
+            parent_id: selectedParentId
+        };
 
         mutation.mutate(formData);
         onClose();
@@ -251,6 +325,9 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
         }
     };
 
+    // Get all potential parent items (all active items)
+    const potentialParents = items?.filter(item => !item.completed) || [];
+
     return (
         <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -261,7 +338,9 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
                 className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md"
             >
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold">Add New Task</h3>
+                    <h3 className="text-xl font-semibold">
+                        {parentId ? "Add Subtask" : "Add New Task"}
+                    </h3>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -287,6 +366,31 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
                             autoFocus
                         />
                     </div>
+
+                    {/* Only show parent selection if not creating a subtask */}
+                    {!parentId && potentialParents.length > 0 && (
+                        <div className="mb-4">
+                            <label
+                                className="block text-gray-700 text-sm font-bold mb-2"
+                                htmlFor="parent_id"
+                            >
+                                Parent Task (optional)
+                            </label>
+                            <select
+                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                id="parent_id"
+                                defaultValue="none"
+                            >
+                                <option value="none">None (Top-level task)</option>
+                                {potentialParents.map(parent => (
+                                    <option key={parent.id} value={parent.id}>
+                                        {parent.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <div className="flex justify-end space-x-2">
                         <button
                             type="button"

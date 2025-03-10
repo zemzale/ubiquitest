@@ -9,6 +9,7 @@ export type Item = {
     id: string;
     completed?: boolean;
     created_by: number;
+    parent_id?: string;
 }
 
 export function useItems() {
@@ -89,6 +90,11 @@ function postItem(ws: WebSocket, user: User) {
             ...body,
         };
 
+        // Remove undefined parent_id to avoid sending it in the payload
+        if (item.parent_id === undefined) {
+            delete item.parent_id;
+        }
+
         ws.send(JSON.stringify({
             type: 'task_created',
             data: item,
@@ -141,5 +147,40 @@ function completeItem(ws: WebSocket, queryClient: ReturnType<typeof useQueryClie
             changes: { completed: true }
         });
     }
+}
+
+/**
+ * Type definition for an item with children (tree node)
+ */
+export type ItemWithChildren = Item & { children: ItemWithChildren[] };
+
+/**
+ * Organizes a flat list of items into a hierarchical tree structure.
+ * Items with parent_id will be nested under their parent.
+ */
+export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
+    const itemMap = new Map<string, ItemWithChildren>();
+    const rootItems: ItemWithChildren[] = [];
+    
+    // First pass: Create a map of all items with empty children arrays
+    items.forEach(item => {
+        itemMap.set(item.id, { ...item, children: [] });
+    });
+    
+    // Second pass: Organize items into tree structure
+    items.forEach(item => {
+        const enhancedItem = itemMap.get(item.id)!;
+        
+        if (item.parent_id && itemMap.has(item.parent_id)) {
+            // This is a child item, add it to its parent's children
+            const parent = itemMap.get(item.parent_id)!;
+            parent.children.push(enhancedItem);
+        } else {
+            // This is a root item
+            rootItems.push(enhancedItem);
+        }
+    });
+    
+    return rootItems;
 }
 
