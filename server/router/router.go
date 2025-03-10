@@ -119,7 +119,7 @@ func (r *Router) GetTodos(
 
 	return oapi.GetTodos200JSONResponse(
 		lo.Map(taskList, func(t tasks.Task, _ int) oapi.Todo {
-			return oapi.Todo{Id: t.ID, Title: t.Title, CreatedBy: t.CreateBy}
+			return oapi.Todo{Id: t.ID, Title: t.Title, CreatedBy: t.CreatedBy}
 		}),
 	), nil
 }

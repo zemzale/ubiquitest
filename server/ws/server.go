@@ -77,9 +77,9 @@ func (s *Server) handleConnection(c connection) {
 			log.Println(taskCreated)
 
 			if err := s.storeTask.Run(tasks.Task{
-				ID:       taskCreated.Id,
-				Title:    taskCreated.Title,
-				CreateBy: c.user,
+				ID:        taskCreated.Id,
+				Title:     taskCreated.Title,
+				CreatedBy: c.user,
 			}); err != nil {
 				log.Println("failed to store task ", err)
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {

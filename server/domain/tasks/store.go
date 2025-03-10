@@ -15,7 +15,7 @@ func NewStore(db *sqlx.DB) *Store {
 }
 
 func (s *Store) Run(task Task) error {
-	userId, err := s.getUserID(task.CreateBy)
+	userId, err := s.getUserID(task.CreatedBy)
 	if err != nil {
 		return fmt.Errorf("failed to get user id: %w", err)
 	}
