@@ -39,15 +39,8 @@ function Page({ user }: { user: User }) {
         <>
             <WebSocketProvider value={ws}>
                 <Navbar user={user} onAddTask={() => setShowModal(true)} />
-                <main className="flex min-h-screen flex-col items-center justify-center pt-16">
-                    <h1 className="text-6xl font-bold mb-8">Welcome to Ubiquitodo!</h1>
+                <main className="flex min-h-screen flex-col items-center pt-16">
                     <ListItems />
-                    <Link
-                        href="/"
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                    >
-                        Back to Login
-                    </Link>
                 </main>
                 {showModal && <AddItemModal onClose={() => setShowModal(false)} />}
             </WebSocketProvider>
@@ -80,7 +73,7 @@ function ListItems() {
     }
 
     return <>
-        <div className="w-full max-w-md mb-6">
+        <div className="w-full max-w-md mb-6 mt-6">
             <h2 className="text-xl font-semibold mb-4">Your Items</h2>
             <ul className="space-y-3">
                 {query.data.map((item) => (
