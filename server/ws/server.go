@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"slices"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -18,7 +17,7 @@ type connection struct {
 }
 
 type Server struct {
-	connections []connection
+	connections map[string]connection
 	rwmutex     *sync.RWMutex
 
 	storeTask  *tasks.Store
@@ -28,7 +27,7 @@ type Server struct {
 
 func NewServer(db *sqlx.DB) *Server {
 	return &Server{
-		connections: make([]connection, 0), rwmutex: &sync.RWMutex{},
+		connections: make(map[string]connection), rwmutex: &sync.RWMutex{},
 
 		db: db,
 
@@ -48,7 +47,11 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	defer s.rwmutex.Unlock()
 	c := connection{conn: conn, user: username}
 
-	s.connections = append(s.connections, c)
+	oldConnection, found := s.connections[username]
+	if found {
+		oldConnection.conn.Close()
+	}
+	s.connections[username] = c
 	go s.handleConnection(c)
 }
 
@@ -56,11 +59,12 @@ func (s *Server) handleConnection(c connection) {
 	for {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
-			log.Printf("failed to read message for user '%s' with error '%s' \n", c.user, err)
+			log.Printf("failed to read message for user '%s' with error '%#v' \n", c.user, err)
+			s.removeConnection(c)
 			break
 		}
 		if messageType == websocket.CloseMessage {
-			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user)
+			log.Printf("received close for user '%s' \n", messageType, c.user)
 			s.removeConnection(c)
 			break
 		}
@@ -174,19 +178,6 @@ func (s *Server) reply(c connection, replyEventType EventType, replyEventData an
 func (s *Server) removeConnection(c connection) {
 	s.rwmutex.Lock()
 	defer s.rwmutex.Unlock()
-	for i, conn := range s.connections {
-		if conn.user != c.user {
-			continue
-		}
-		if err := conn.conn.Close(); err != nil {
-			log.Printf("failed to close connection for user '%s' with error '%s' \n", c.user, err)
-		}
 
-		if len(s.connections) == 1 {
-			s.connections = make([]connection, 0)
-			return
-		}
-		s.connections = slices.Delete(s.connections, i, i+1)
-		break
-	}
+	delete(s.connections, c.user)
 }
