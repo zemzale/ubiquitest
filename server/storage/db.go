@@ -7,7 +7,7 @@ import (
 )
 
 func NewDB() (*sqlx.DB, error) {
-	return sqlx.Open("sqlite3", ":memory:")
+	return sqlx.Open("sqlite3", "./db.sqlite")
 }
 
 func CreateDB(db *sqlx.DB) error {
