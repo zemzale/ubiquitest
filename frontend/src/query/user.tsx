@@ -26,25 +26,40 @@ export function useLogin() {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             localStorage.setItem('user', JSON.stringify(result));
             
-            // Pre-fetch tasks immediately after login
-            queryClient.prefetchQuery({
-                queryKey: ['todos'],
-                queryFn: async () => {
-                    try {
-                        const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch tasks');
+            // Check if this is the first login (todos not yet fetched)
+            const hasFetchedTodos = localStorage.getItem('hasFetchedTodos') === 'true';
+            
+            if (!hasFetchedTodos) {
+                console.log('First login - fetching todos from server');
+                
+                // Pre-fetch tasks only on first login
+                queryClient.prefetchQuery({
+                    queryKey: ['todos'],
+                    queryFn: async () => {
+                        try {
+                            const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
+                            if (!response.ok) {
+                                throw new Error('Failed to fetch tasks');
+                            }
+                            const todos = await response.json();
+                            
+                            // Store in localStorage as backup
+                            localStorage.setItem('todos', JSON.stringify(todos));
+                            
+                            // Set the flag indicating we've fetched todos at least once
+                            localStorage.setItem('hasFetchedTodos', 'true');
+                            
+                            console.log('Initial todos fetch complete and saved');
+                            return todos;
+                        } catch (error) {
+                            console.error('Error pre-fetching tasks:', error);
+                            return [];
                         }
-                        const todos = await response.json();
-                        // Store in localStorage as backup
-                        localStorage.setItem('todos', JSON.stringify(todos));
-                        return todos;
-                    } catch (error) {
-                        console.error('Error pre-fetching tasks:', error);
-                        return [];
                     }
-                }
-            });
+                });
+            } else {
+                console.log('Subsequent login - not fetching todos from server');
+            }
         },
     })
 }

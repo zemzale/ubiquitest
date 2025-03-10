@@ -2,6 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAddItem, useCompleteItem, useItems, ItemWithChildren, organizeItemsIntoTree } from "~/query/item";
 import { User, useUser, useUserById } from "~/query/user";
 import { useCreateWebsocket, useWebsocket, WebSocketProvider } from "~/ws/hook";
@@ -70,6 +71,7 @@ function Loading() {
 function ListItems() {
     const query = useItems();
     const completeMutation = useCompleteItem();
+    const queryClient = useQueryClient();
 
     if (!query.data) {
         return <></>;
@@ -77,6 +79,14 @@ function ListItems() {
 
     const handleComplete = (id: string) => {
         completeMutation.mutate(id);
+    };
+
+    // Function to force refresh todos from server
+    const handleRefresh = () => {
+        // Remove the flag to trigger a server fetch
+        localStorage.removeItem('hasFetchedTodos');
+        // Invalidate the query to trigger a refetch
+        queryClient.invalidateQueries({ queryKey: ['todos'] });
     };
 
     // Sort items: incomplete tasks first, then completed tasks
@@ -97,7 +107,19 @@ function ListItems() {
 
     return <>
         <div className="w-full max-w-md mb-6 mt-6">
-            <h2 className="text-xl font-semibold mb-4">Your Items</h2>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Your Items</h2>
+                <button
+                    onClick={handleRefresh}
+                    disabled={query.isLoading}
+                    className="text-blue-500 hover:text-blue-700 text-sm flex items-center"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {query.isLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+            </div>
             <ul className="space-y-3">
                 {activeItemsTree.map((item) => (
                     <TaskItem
@@ -252,8 +274,14 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
     const { status, reconnect } = useWebsocket();
 
     const handleLogout = () => {
+        // Remove user data and todos
         localStorage.removeItem('user');
         localStorage.removeItem('todos');
+
+        // Also remove the flag that tracks todo fetching
+        // This means the user will get a fresh todo fetch on next login
+        localStorage.removeItem('hasFetchedTodos');
+
         router.push('/');
     };
 

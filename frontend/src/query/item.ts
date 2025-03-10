@@ -16,28 +16,48 @@ export function useItems() {
     return useQuery({
         queryKey: ['todos'],
         queryFn: async () => {
+            const hasFetchedTodos = localStorage.getItem('hasFetchedTodos') === 'true';
+            const todosString = localStorage.getItem('todos');
+            
+            // If we've already fetched todos and have them in localStorage, use that
+            if (hasFetchedTodos && todosString) {
+                console.log('Using cached todos from localStorage');
+                return JSON.parse(todosString) as Item[];
+            }
+            
+            // Otherwise fetch from server (first login or explicit refresh)
             try {
-                // First try to fetch from server API
+                console.log('Fetching todos from server');
                 const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch tasks from server');
                 }
                 const serverTodos = await response.json() as Item[];
-
+                
                 // Store in localStorage for offline access
                 localStorage.setItem('todos', JSON.stringify(serverTodos));
+                
+                // Set the flag indicating we've fetched todos
+                localStorage.setItem('hasFetchedTodos', 'true');
+                
                 console.log('Fetched todos from server:', serverTodos);
                 return serverTodos;
             } catch (error) {
                 console.error('Error fetching from server, falling back to localStorage:', error);
-                // Fallback to localStorage if server fetch fails
-                const todosString = localStorage.getItem('todos');
-                console.log('Fetching todos from localStorage:', todosString);
-                return JSON.parse(todosString ?? '[]') as Item[];
+                
+                // If we have data in localStorage, use it as fallback
+                if (todosString) {
+                    console.log('Falling back to localStorage todos');
+                    return JSON.parse(todosString) as Item[];
+                }
+                
+                // Otherwise return empty array
+                console.log('No todos available, returning empty array');
+                return [] as Item[];
             }
         },
-        // Ensure the query refetches when invalidated
-        staleTime: 0,
+        // Keep cached data longer, since we're relying on localStorage
+        staleTime: 5 * 60 * 1000, // 5 minutes
     });
 }
 
@@ -163,16 +183,16 @@ export type ItemWithChildren = Item & { children: ItemWithChildren[] };
 export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
     const itemMap = new Map<string, ItemWithChildren>();
     const rootItems: ItemWithChildren[] = [];
-
+    
     // First pass: Create a map of all items with empty children arrays
     items.forEach(item => {
         itemMap.set(item.id, { ...item, children: [] });
     });
-
+    
     // Second pass: Organize items into tree structure
     items.forEach(item => {
         const enhancedItem = itemMap.get(item.id)!;
-
+        
         if (item.parent_id && itemMap.has(item.parent_id)) {
             // This is a child item, add it to its parent's children
             const parent = itemMap.get(item.parent_id)!;
@@ -182,7 +202,6 @@ export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
             rootItems.push(enhancedItem);
         }
     });
-
+    
     return rootItems;
 }
-
