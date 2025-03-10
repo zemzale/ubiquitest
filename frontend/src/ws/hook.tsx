@@ -14,20 +14,53 @@ export function useCreateWebsocket(user: string) {
         });
 
         ws.addEventListener("message", (event) => {
-            const message = JSON.parse(event.data);
-            const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-            
-            if (message.type === 'task_created') {
-                todos.push(message.data);
-                localStorage.setItem("todos", JSON.stringify(todos));
-            } else if (message.type === 'task_done') {
-                const updatedTodos = todos.map(todo => 
-                    todo.id === message.data.id ? { ...todo, completed: true } : todo
-                );
-                localStorage.setItem("todos", JSON.stringify(updatedTodos));
-            }
+            console.log('WebSocket message received:', event.data);
 
-            queryClient.invalidateQueries({ queryKey: ['todos'] });
+            try {
+                const message = JSON.parse(event.data);
+                const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
+
+                if (message.type === 'task_created') {
+                    const exists = todos.some(todo => todo.id === message.data.id);
+                    if (exists) {
+                        console.warn('Received task_created for existing task:', message.data.id);
+                    }
+                    todos.push(message.data);
+                    localStorage.setItem("todos", JSON.stringify(todos));
+                } else if (message.type === 'task_done') {
+                    // The message.data should be the full item with completed=true
+                    const taskId = message.data.id;
+
+                    if (!taskId) {
+                        console.error('Missing task ID in task_done message:', message);
+                        return;
+                    }
+
+                    const taskExists = todos.some(todo => todo.id === taskId);
+
+                    if (!taskExists) {
+                        console.warn('Received task_done for unknown task:', taskId);
+                    }
+                    const updatedTodos = todos.map(todo => {
+                        if (todo.id === taskId) {
+                            console.log('Marking task as completed:', todo.id);
+                            // Use the data from the message or ensure completed is true
+                            return { ...todo, ...message.data, completed: true };
+                        }
+                        return todo;
+                    });
+
+                    localStorage.setItem("todos", JSON.stringify(updatedTodos));
+                    console.log('Updated todos saved to localStorage');
+                } else {
+                    console.log('Unknown message type:', message.type);
+                }
+
+                // Invalidate the todos query to trigger a re-fetch
+                queryClient.invalidateQueries({ queryKey: ['todos'] });
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
         });
 
         return ws;
