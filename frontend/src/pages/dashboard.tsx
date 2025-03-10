@@ -109,7 +109,7 @@ function ListItems() {
         <div className="w-full max-w-6xl mb-6 mt-6 px-4">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Task Dashboard</h2>
-                <button 
+                <button
                     onClick={handleRefresh}
                     disabled={query.isLoading}
                     className="text-blue-500 hover:text-blue-700 text-sm flex items-center"
@@ -120,7 +120,7 @@ function ListItems() {
                     {query.isLoading ? 'Refreshing...' : 'Refresh'}
                 </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Active Tasks Column */}
                 <div className="bg-white rounded-lg shadow-md p-4">
@@ -130,9 +130,9 @@ function ListItems() {
                     ) : (
                         <ul className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
                             {activeItemsTree.map((item) => (
-                                <TaskItem 
-                                    key={item.id} 
-                                    item={item} 
+                                <TaskItem
+                                    key={item.id}
+                                    item={item}
                                     level={0}
                                     onComplete={handleComplete}
                                     isCompleted={false}
@@ -141,7 +141,7 @@ function ListItems() {
                         </ul>
                     )}
                 </div>
-                
+
                 {/* Completed Tasks Column */}
                 <div className="bg-white rounded-lg shadow-md p-4">
                     <h3 className="text-lg font-semibold mb-4 text-green-600 border-b pb-2">Completed Tasks</h3>
@@ -150,9 +150,9 @@ function ListItems() {
                     ) : (
                         <ul className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
                             {completedItemsTree.map((item) => (
-                                <TaskItem 
-                                    key={item.id} 
-                                    item={item} 
+                                <TaskItem
+                                    key={item.id}
+                                    item={item}
                                     level={0}
                                     onComplete={handleComplete}
                                     isCompleted={true}
@@ -181,30 +181,42 @@ function TaskItem({
     const hasChildren = item.children && item.children.length > 0;
     const [showAddSubtask, setShowAddSubtask] = useState(false);
 
-    // Calculate indentation based on nesting level (only apply after level 0)
-    const indentClass = level > 0 ? `ml-${Math.min(level * 4, 12)}` : '';
+    // Calculate styling based on nesting level
+    const isSubtask = level > 0;
+
+    // For subtasks, make them visually distinct with smaller size and darker background
+    const subtaskClasses = isSubtask ?
+        'mt-1 border-l-2 border-l-blue-300 pl-3 transform scale-95 origin-top-left' :
+        '';
 
     return (
         <>
-            <li key={item.id} className={indentClass}>
-                <div className={`${isCompleted ? 'bg-gray-50' : 'bg-white'} shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow duration-200 border ${isCompleted ? 'border-gray-200' : 'border-gray-100'}`}>
+            <li key={item.id} className={`${subtaskClasses} ${isSubtask ? 'my-2' : 'mb-3'}`}>
+                <div className={`${isCompleted ? 'bg-gray-50' : 'bg-white'} 
+                    shadow-sm rounded-lg ${isSubtask ? 'p-2.5' : 'p-4'} hover:shadow-md transition-shadow duration-200 
+                    border ${isCompleted ? 'border-gray-200' : 'border-gray-100'}`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center flex-grow">
                             {isCompleted ? (
-                                <div className="w-5 h-5 rounded-full bg-green-100 border border-green-300 flex items-center justify-center mr-3 flex-shrink-0">
-                                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <div className={`${isSubtask ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-green-100 border border-green-300 flex items-center justify-center mr-3 flex-shrink-0`}>
+                                    <svg className={`${isSubtask ? 'w-2.5 h-2.5' : 'w-3 h-3'} text-green-600`} fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                 </div>
                             ) : (
-                                <div className="w-5 h-5 rounded-full bg-blue-50 border border-blue-200 mr-3 flex-shrink-0"></div>
+                                <div className={`${isSubtask ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-blue-50 border border-blue-200 mr-3 flex-shrink-0`}></div>
                             )}
                             <div className="min-w-0 flex-grow">
-                                <h3 className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'} break-words`}>
+                                {isSubtask && (
+                                    <div className="text-xs font-semibold uppercase mb-0.5">Subtask</div>
+                                )}
+                                <h3 className={`${isSubtask ? 'text-sm' : 'text-base'} font-medium 
+                                    ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'} 
+                                    break-words`}>
                                     {item.title}
                                 </h3>
                                 {item.created_by && (
-                                    <TaskCreator userId={item.created_by} />
+                                    <TaskCreator userId={item.created_by} isSubtask={isSubtask} />
                                 )}
                                 {hasChildren && (
                                     <div className="mt-1 text-xs text-blue-500">
@@ -217,10 +229,10 @@ function TaskItem({
                             {!isCompleted && (
                                 <button
                                     onClick={() => setShowAddSubtask(true)}
-                                    className="p-1 text-blue-500 hover:bg-blue-50 rounded-full"
+                                    className={`p-1 text-blue-500 hover:bg-blue-50 rounded-full ${isSubtask ? 'scale-90' : ''}`}
                                     title="Add subtask"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`${isSubtask ? 'h-4 w-4' : 'h-5 w-5'}`} viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                                     </svg>
                                 </button>
@@ -228,10 +240,10 @@ function TaskItem({
                             {!isCompleted && (
                                 <button
                                     onClick={() => onComplete(item.id)}
-                                    className="p-1 text-green-500 hover:bg-green-50 rounded-full"
+                                    className={`p-1 text-green-500 hover:bg-green-50 rounded-full ${isSubtask ? 'scale-90' : ''}`}
                                     title="Mark as complete"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`${isSubtask ? 'h-4 w-4' : 'h-5 w-5'}`} viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                 </button>
@@ -251,7 +263,7 @@ function TaskItem({
 
             {/* Render children if any */}
             {hasChildren && (
-                <ul className="space-y-3 mt-3">
+                <ul className="pl-6 mt-1 space-y-1 border-l-2 border-blue-200">
                     {item.children.map((child: any) => (
                         <TaskItem
                             key={child.id}
@@ -267,18 +279,21 @@ function TaskItem({
     );
 }
 
-function TaskCreator({ userId }: { userId: number }) {
+function TaskCreator({ userId, isSubtask = false }: { userId: number, isSubtask?: boolean }) {
     const { data: user, isLoading, isError } = useUserById(userId);
 
+    // Style based on whether this is a subtask
+    const textColorClass = isSubtask ? 'text-blue-400' : 'text-gray-500';
+
     if (isLoading) {
-        return <p className="text-xs text-gray-500">Loading creator...</p>;
+        return <p className={`text-xs ${textColorClass}`}>Loading creator...</p>;
     }
 
     if (isError || !user) {
-        return <p className="text-xs text-gray-500">Unknown creator</p>;
+        return <p className={`text-xs ${textColorClass}`}>Unknown creator</p>;
     }
 
-    return <p className="text-xs text-gray-500">Created by: {user.username}</p>;
+    return <p className={`text-xs ${textColorClass}`}>Created by: {user.username}</p>;
 }
 
 function Error() {
