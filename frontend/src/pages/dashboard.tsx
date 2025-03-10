@@ -41,7 +41,7 @@ function Page({ user }: { user: User }) {
         <>
             <WebSocketProvider value={ws}>
                 <Navbar user={user} onAddTask={() => setShowModal(true)} />
-                <main className="flex min-h-screen flex-col items-center pt-16">
+                <main className="flex min-h-screen flex-col items-center pt-16 bg-gray-50">
                     <ListItems />
                 </main>
                 {showModal && <AddItemModal onClose={() => setShowModal(false)} />}
@@ -106,10 +106,10 @@ function ListItems() {
     const completedItemsTree = organizeItemsIntoTree(completedItems);
 
     return <>
-        <div className="w-full max-w-md mb-6 mt-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Items</h2>
-                <button
+        <div className="w-full max-w-6xl mb-6 mt-6 px-4">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Task Dashboard</h2>
+                <button 
                     onClick={handleRefresh}
                     disabled={query.isLoading}
                     className="text-blue-500 hover:text-blue-700 text-sm flex items-center"
@@ -120,42 +120,48 @@ function ListItems() {
                     {query.isLoading ? 'Refreshing...' : 'Refresh'}
                 </button>
             </div>
-            <ul className="space-y-3">
-                {activeItemsTree.map((item) => (
-                    <TaskItem
-                        key={item.id}
-                        item={item}
-                        level={0}
-                        onComplete={handleComplete}
-                        isCompleted={false}
-                    />
-                ))}
-
-                {hasCompletedItems && (
-                    <>
-                        <li className="my-6">
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-300"></div>
-                                </div>
-                                <div className="relative flex justify-center">
-                                    <span className="bg-white px-2 text-sm text-gray-500">Completed Tasks</span>
-                                </div>
-                            </div>
-                        </li>
-
-                        {completedItemsTree.map((item) => (
-                            <TaskItem
-                                key={item.id}
-                                item={item}
-                                level={0}
-                                onComplete={handleComplete}
-                                isCompleted={true}
-                            />
-                        ))}
-                    </>
-                )}
-            </ul>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Active Tasks Column */}
+                <div className="bg-white rounded-lg shadow-md p-4">
+                    <h3 className="text-lg font-semibold mb-4 text-blue-600 border-b pb-2">Upcoming Tasks</h3>
+                    {activeItemsTree.length === 0 ? (
+                        <p className="text-gray-500 italic text-center py-8">No upcoming tasks</p>
+                    ) : (
+                        <ul className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
+                            {activeItemsTree.map((item) => (
+                                <TaskItem 
+                                    key={item.id} 
+                                    item={item} 
+                                    level={0}
+                                    onComplete={handleComplete}
+                                    isCompleted={false}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                
+                {/* Completed Tasks Column */}
+                <div className="bg-white rounded-lg shadow-md p-4">
+                    <h3 className="text-lg font-semibold mb-4 text-green-600 border-b pb-2">Completed Tasks</h3>
+                    {!hasCompletedItems ? (
+                        <p className="text-gray-500 italic text-center py-8">No completed tasks</p>
+                    ) : (
+                        <ul className="space-y-3 max-h-[calc(100vh-240px)] overflow-y-auto pr-2">
+                            {completedItemsTree.map((item) => (
+                                <TaskItem 
+                                    key={item.id} 
+                                    item={item} 
+                                    level={0}
+                                    onComplete={handleComplete}
+                                    isCompleted={true}
+                                />
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
         </div>
     </>;
 }
@@ -181,39 +187,54 @@ function TaskItem({
     return (
         <>
             <li key={item.id} className={indentClass}>
-                <div className={`bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 ${isCompleted ? 'opacity-60' : ''}`}>
+                <div className={`${isCompleted ? 'bg-gray-50' : 'bg-white'} shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow duration-200 border ${isCompleted ? 'border-gray-200' : 'border-gray-100'}`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <div>
-                                <h3 className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                        <div className="flex items-center flex-grow">
+                            {isCompleted ? (
+                                <div className="w-5 h-5 rounded-full bg-green-100 border border-green-300 flex items-center justify-center mr-3 flex-shrink-0">
+                                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <div className="w-5 h-5 rounded-full bg-blue-50 border border-blue-200 mr-3 flex-shrink-0"></div>
+                            )}
+                            <div className="min-w-0 flex-grow">
+                                <h3 className={`font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'} break-words`}>
                                     {item.title}
                                 </h3>
                                 {item.created_by && (
                                     <TaskCreator userId={item.created_by} />
                                 )}
+                                {hasChildren && (
+                                    <div className="mt-1 text-xs text-blue-500">
+                                        {item.children.length} {item.children.length === 1 ? 'subtask' : 'subtasks'}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1 ml-2 flex-shrink-0">
                             {!isCompleted && (
                                 <button
                                     onClick={() => setShowAddSubtask(true)}
-                                    className="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-sm"
+                                    className="p-1 text-blue-500 hover:bg-blue-50 rounded-full"
                                     title="Add subtask"
                                 >
-                                    + Subtask
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                                    </svg>
                                 </button>
                             )}
-                            {!isCompleted ? (
+                            {!isCompleted && (
                                 <button
                                     onClick={() => onComplete(item.id)}
-                                    className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
+                                    className="p-1 text-green-500 hover:bg-green-50 rounded-full"
+                                    title="Mark as complete"
                                 >
-                                    Complete
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
                                 </button>
-                            ) : (
-                                <span className="ml-2 text-green-600 text-sm font-medium">
-                                    ✓ Completed
-                                </span>
                             )}
                         </div>
                     </div>
@@ -309,10 +330,10 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
 
     return (
         <nav className="fixed top-0 left-0 right-0 bg-white shadow-md p-4 z-10">
-            <div className="container mx-auto flex justify-between items-center">
-                <div className="font-bold text-xl">Ubiquitodo</div>
+            <div className="container mx-auto max-w-6xl flex justify-between items-center px-4">
                 <div className="flex items-center">
-                    <div className="flex items-center mr-4">
+                    <div className="font-bold text-xl text-blue-600">Ubiquitodo</div>
+                    <div className="flex items-center ml-6">
                         <div className={`h-3 w-3 rounded-full ${getStatusColor()} mr-2`}></div>
                         <span className="text-xs text-gray-600">{getStatusLabel()}</span>
                         {status !== 'connected' && (
@@ -325,19 +346,31 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
                             </button>
                         )}
                     </div>
+                </div>
+                <div className="flex items-center">
                     <button
                         onClick={onAddTask}
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mr-4"
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm mr-4 flex items-center"
                     >
-                        Add Task
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                        New Task
                     </button>
-                    <p className="mr-4">Logged in as: <span className="font-semibold">{user.username}</span></p>
-                    <button
-                        onClick={handleLogout}
-                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm"
-                    >
-                        Logout
-                    </button>
+                    <div className="flex items-center bg-gray-100 rounded-full px-3 py-1 mr-3">
+                        <span className="text-sm mr-2">
+                            <span className="text-gray-600">@</span><span className="font-semibold text-gray-800">{user.username}</span>
+                        </span>
+                        <button
+                            onClick={handleLogout}
+                            className="text-gray-500 hover:text-red-500"
+                            title="Logout"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5-5H3zm9 5a1 1 0 10-2 0v4a1 1 0 102 0V8zm-2-7a1 1 0 00-1 1v1a1 1 0 102 0V2a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>
