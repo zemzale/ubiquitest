@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid';
-import { useWebsocket } from '~/ws/hook';
+import { useWebsocket, EnhancedWebSocket } from '~/ws/hook';
 import { User } from './user';
 import { env } from '~/env';
 
@@ -80,7 +80,7 @@ export function useCompleteItem() {
 
 type NewItem = Omit<Item, 'id' | 'created_by'>;
 
-function postItem(ws: WebSocket, user: User) {
+function postItem(ws: EnhancedWebSocket, user: User) {
     return async (body: NewItem) => {
         const id = uuidv4();
         const item: Item = {
@@ -95,11 +95,7 @@ function postItem(ws: WebSocket, user: User) {
             delete item.parent_id;
         }
 
-        if (ws.readyState !== WebSocket.OPEN) {
-            console.error('WebSocket is not open, cannot send task_created message:', item);
-            return;
-        }
-
+        // Use the enhanced send method which handles connection state
         ws.send(JSON.stringify({
             type: 'task_created',
             data: item,
@@ -111,7 +107,7 @@ function postItem(ws: WebSocket, user: User) {
     }
 }
 
-function updateTask(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient>) {
+function updateTask(ws: EnhancedWebSocket, queryClient: ReturnType<typeof useQueryClient>) {
     return async ({ id, changes }: { id: string, changes: Partial<Item> }) => {
         console.log('Updating task:', id, 'with changes:', changes);
         const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
@@ -123,6 +119,7 @@ function updateTask(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient
         }
         const updatedItem = { ...item, ...changes };
 
+        // Use the enhanced send method which handles connection state
         ws.send(JSON.stringify({
             type: 'task_updated',
             data: updatedItem,
@@ -142,7 +139,7 @@ function updateTask(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient
 }
 
 // Use the generic updateTask function for completing items
-function completeItem(ws: WebSocket, queryClient: ReturnType<typeof useQueryClient>) {
+function completeItem(ws: EnhancedWebSocket, queryClient: ReturnType<typeof useQueryClient>) {
     const updateTaskFn = updateTask(ws, queryClient);
 
     return async (itemId: string) => {

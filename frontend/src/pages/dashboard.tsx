@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import { useAddItem, useCompleteItem, useItems, ItemWithChildren, organizeItemsIntoTree } from "~/query/item";
 import { User, useUser, useUserById } from "~/query/user";
-import { useCreateWebsocket, WebSocketProvider } from "~/ws/hook";
+import { useCreateWebsocket, useWebsocket, WebSocketProvider } from "~/ws/hook";
 
 export default function Dashboard() {
     const query = useUser();
@@ -249,10 +249,34 @@ function Error() {
 
 function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
     const router = useRouter();
+    const { status, reconnect } = useWebsocket();
+
     const handleLogout = () => {
         localStorage.removeItem('user');
         localStorage.removeItem('todos');
         router.push('/');
+    };
+
+    // Get status color based on connection state
+    const getStatusColor = () => {
+        switch (status) {
+            case 'connected': return 'bg-green-500';
+            case 'connecting': return 'bg-yellow-500';
+            case 'reconnecting': return 'bg-yellow-500 animate-pulse';
+            case 'disconnected': return 'bg-red-500';
+            default: return 'bg-gray-500';
+        }
+    };
+
+    // Get status label based on connection state
+    const getStatusLabel = () => {
+        switch (status) {
+            case 'connected': return 'Connected';
+            case 'connecting': return 'Connecting...';
+            case 'reconnecting': return 'Reconnecting...';
+            case 'disconnected': return 'Disconnected';
+            default: return 'Unknown';
+        }
     };
 
     return (
@@ -260,6 +284,19 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
             <div className="container mx-auto flex justify-between items-center">
                 <div className="font-bold text-xl">Ubiquitodo</div>
                 <div className="flex items-center">
+                    <div className="flex items-center mr-4">
+                        <div className={`h-3 w-3 rounded-full ${getStatusColor()} mr-2`}></div>
+                        <span className="text-xs text-gray-600">{getStatusLabel()}</span>
+                        {status !== 'connected' && (
+                            <button
+                                onClick={reconnect}
+                                className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                                title="Reconnect WebSocket"
+                            >
+                                Reconnect
+                            </button>
+                        )}
+                    </div>
                     <button
                         onClick={onAddTask}
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mr-4"
