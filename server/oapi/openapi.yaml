@@ -105,9 +105,10 @@ components:
           description: The title of the todo item
           example: Buy groceries
         created_by:
-          type: string
-          description: The username of the user who create the todo item
-          example: "user"
+          type: number
+          x-go-type: uint
+          description: The user id of the user who create the todo item
+          example: 1
     LoginResponse:
       type: object
       required:

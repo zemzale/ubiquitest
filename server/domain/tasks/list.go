@@ -42,7 +42,7 @@ func (l *List) Run() ([]Task, error) {
 			users[createdBy] = username
 		}
 
-		todos = append(todos, Task{ID: uuid.MustParse(id), Title: title, CreatedBy: username})
+		todos = append(todos, Task{ID: uuid.MustParse(id), Title: title, CreatedBy: createdBy})
 	}
 
 	return todos, nil

@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/gorilla/websocket"
+	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
 )
 
@@ -21,8 +22,8 @@ type Server struct {
 	storeTask *tasks.Store
 }
 
-func NewServer() *Server {
-	return &Server{connections: make([]connection, 0)}
+func NewServer(db *sqlx.DB) *Server {
+	return &Server{connections: make([]connection, 0), storeTask: tasks.NewStore(db)}
 }
 
 func (s *Server) Close() {
@@ -79,7 +80,7 @@ func (s *Server) handleConnection(c connection) {
 			if err := s.storeTask.Run(tasks.Task{
 				ID:        taskCreated.Id,
 				Title:     taskCreated.Title,
-				CreatedBy: c.user,
+				CreatedBy: taskCreated.CreatedBy,
 			}); err != nil {
 				log.Println("failed to store task ", err)
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {

@@ -15,13 +15,13 @@ func NewStore(db *sqlx.DB) *Store {
 }
 
 func (s *Store) Run(task Task) error {
-	userId, err := s.getUserID(task.CreatedBy)
+	err := s.checkUserExists(task.CreatedBy)
 	if err != nil {
 		return fmt.Errorf("failed to get user id: %w", err)
 	}
 	result, err := s.db.Exec(
 		"INSERT INTO todos (id, title, created_by) VALUES (?, ?, ?)",
-		task.ID.String(), task.Title, userId,
+		task.ID.String(), task.Title, task.CreatedBy,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
@@ -39,11 +39,11 @@ func (s *Store) Run(task Task) error {
 	return nil
 }
 
-func (s *Store) getUserID(username string) (int, error) {
-	var id int
-	err := s.db.Get(&id, "SELECT id FROM users WHERE username = ?", username)
+func (s *Store) checkUserExists(userID uint) error {
+	var id uint
+	err := s.db.Get(&id, "SELECT id FROM users WHERE id = ?", userID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get user id: %w", err)
+		return fmt.Errorf("failed to get user id: %w", err)
 	}
-	return id, nil
+	return nil
 }

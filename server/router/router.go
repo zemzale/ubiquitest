@@ -30,7 +30,7 @@ type Router struct {
 }
 
 func NewRouter(db *sqlx.DB) *Router {
-	return &Router{db: db, ws: ws.NewServer(), list: tasks.NewList(db)}
+	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db)}
 }
 
 func Run(db *sqlx.DB) error {
