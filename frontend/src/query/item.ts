@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid';
 import { useWebsocket } from '~/ws/hook';
 import { User } from './user';
+import { env } from '~/env';
 
 export type Item = {
     title: string;
@@ -13,10 +14,26 @@ export type Item = {
 export function useItems() {
     return useQuery({
         queryKey: ['todos'],
-        queryFn: () => {
-            const todosString = localStorage.getItem('todos');
-            console.log('Fetching todos from localStorage:', todosString);
-            return JSON.parse(todosString ?? '[]') as Item[];
+        queryFn: async () => {
+            try {
+                // First try to fetch from server API
+                const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tasks from server');
+                }
+                const serverTodos = await response.json() as Item[];
+                
+                // Store in localStorage for offline access
+                localStorage.setItem('todos', JSON.stringify(serverTodos));
+                console.log('Fetched todos from server:', serverTodos);
+                return serverTodos;
+            } catch (error) {
+                console.error('Error fetching from server, falling back to localStorage:', error);
+                // Fallback to localStorage if server fetch fails
+                const todosString = localStorage.getItem('todos');
+                console.log('Fetching todos from localStorage:', todosString);
+                return JSON.parse(todosString ?? '[]') as Item[];
+            }
         },
         // Ensure the query refetches when invalidated
         staleTime: 0,

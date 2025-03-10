@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { env } from '~/env'
+import { Item } from './item'
 
 export type User = {
     username: string;
@@ -24,6 +25,26 @@ export function useLogin() {
         onSuccess: (result: User) => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             localStorage.setItem('user', JSON.stringify(result));
+            
+            // Pre-fetch tasks immediately after login
+            queryClient.prefetchQuery({
+                queryKey: ['todos'],
+                queryFn: async () => {
+                    try {
+                        const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch tasks');
+                        }
+                        const todos = await response.json();
+                        // Store in localStorage as backup
+                        localStorage.setItem('todos', JSON.stringify(todos));
+                        return todos;
+                    } catch (error) {
+                        console.error('Error pre-fetching tasks:', error);
+                        return [];
+                    }
+                }
+            });
         },
     })
 }
