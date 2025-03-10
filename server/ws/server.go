@@ -48,18 +48,6 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	defer s.rwmutex.Unlock()
 	c := connection{conn: conn, user: username}
 
-	for i, c := range s.connections {
-		if c.user != username {
-			continue
-		}
-		if err := c.conn.Close(); err != nil {
-			log.Printf("failed to close connection for user '%s' with error '%s' \n", c.user, err)
-		}
-
-		s.connections = slices.Delete(s.connections, i, i+1)
-		break
-	}
-
 	s.connections = append(s.connections, c)
 	go s.handleConnection(c)
 }
@@ -69,7 +57,6 @@ func (s *Server) handleConnection(c connection) {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
 			log.Printf("failed to read message for user '%s' with error '%s' \n", c.user, err)
-			s.removeConnection(c)
 			break
 		}
 		if messageType == websocket.CloseMessage {

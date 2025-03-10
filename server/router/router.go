@@ -3,8 +3,6 @@ package router
 import (
 	"cmp"
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/lo"
 	"github.com/zemzale/ubiquitest/domain/tasks"
+	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
 	"github.com/zemzale/ubiquitest/ws"
 )
@@ -24,13 +23,14 @@ import (
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
 type Router struct {
-	db   *sqlx.DB
-	ws   *ws.Server
-	list *tasks.List
+	db         *sqlx.DB
+	ws         *ws.Server
+	list       *tasks.List
+	upsertUser *users.FindOrCreate
 }
 
 func NewRouter(db *sqlx.DB) *Router {
-	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db)}
+	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db), upsertUser: users.NewFindOrCreate(db)}
 }
 
 func Run(db *sqlx.DB) error {
@@ -82,30 +82,12 @@ func (r *Router) PostTodos(
 func (r *Router) PostLogin(
 	ctx context.Context, request oapi.PostLoginRequestObject,
 ) (oapi.PostLoginResponseObject, error) {
-	// TODO: Refactor this to be just normal
-	{
-		result := r.db.QueryRow("SELECT id FROM users WHERE username = ?", request.Body.Username)
-		var userID uint
-		if err := result.Scan(&userID); err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
-			}
-		}
-		if userID != 0 {
-			return oapi.PostLogin200JSONResponse{Id: userID, Username: request.Body.Username}, nil
-		}
+	user, err := r.upsertUser.Run(request.Body.Username)
+	if err != nil {
+		return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
 
-	{
-		result := r.db.QueryRow("INSERT INTO users (username) VALUES (?) RETURNING id", request.Body.Username)
-
-		var userID uint
-		if err := result.Scan(&userID); err != nil {
-			return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
-		}
-
-		return oapi.PostLogin200JSONResponse{Id: userID, Username: request.Body.Username}, nil
-	}
+	return oapi.PostLogin200JSONResponse{Id: user.ID, Username: user.Username}, nil
 }
 
 func (r *Router) GetTodos(
