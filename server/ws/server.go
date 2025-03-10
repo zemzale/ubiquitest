@@ -77,18 +77,20 @@ func (s *Server) handleConnection(c connection) {
 
 			log.Println(taskCreated)
 
-			if err := s.storeTask.Run(tasks.Task{
+			task := tasks.Task{
 				ID:        taskCreated.Id,
 				Title:     taskCreated.Title,
 				CreatedBy: taskCreated.CreatedBy,
-			}); err != nil {
+			}
+
+			if err := s.storeTask.Run(task); err != nil {
 				log.Println("failed to store task ", err)
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 					log.Println("failed to reply with error ", replyErr)
 				}
 			}
 
-			s.broadcast(taskCreated, c)
+			s.broadcast(event, c)
 		default:
 			log.Println("unknown event type ", event.EventType)
 			log.Println(string(message))
@@ -96,13 +98,13 @@ func (s *Server) handleConnection(c connection) {
 	}
 }
 
-func (s *Server) broadcast(taskCreated EventTaskCreated, broadcaster connection) {
+func (s *Server) broadcast(data any, broadcaster connection) {
 	for _, conn := range s.connections {
 		if conn.user == broadcaster.user {
 			continue
 		}
 		log.Printf("broadcasting to user '%s' \n", conn.user)
-		if err := conn.conn.WriteJSON(taskCreated); err != nil {
+		if err := conn.conn.WriteJSON(data); err != nil {
 			log.Println(err)
 		}
 	}
