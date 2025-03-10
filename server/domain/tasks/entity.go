@@ -7,4 +7,5 @@ type Task struct {
 	Title     string
 	CreatedBy uint
 	Completed bool
+	ParentID  uuid.UUID
 }

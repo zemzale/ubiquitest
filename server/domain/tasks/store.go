@@ -3,6 +3,7 @@ package tasks
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,9 +20,14 @@ func (s *Store) Run(task Task) error {
 	if err != nil {
 		return fmt.Errorf("failed to get user id: %w", err)
 	}
+
+	err = s.checkIfParentExists(task.ParentID)
+	if err != nil {
+		return fmt.Errorf("failed to check if parent exists: %w", err)
+	}
 	result, err := s.db.Exec(
-		"INSERT INTO todos (id, title, created_by) VALUES (?, ?, ?)",
-		task.ID.String(), task.Title, task.CreatedBy,
+		"INSERT INTO todos (id, title, created_by, parent_id) VALUES (?, ?, ?, ?)",
+		task.ID.String(), task.Title, task.CreatedBy, task.ParentID.String(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
@@ -44,6 +50,19 @@ func (s *Store) checkUserExists(userID uint) error {
 	err := s.db.Get(&id, "SELECT id FROM users WHERE id = ?", userID)
 	if err != nil {
 		return fmt.Errorf("failed to get user id: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) checkIfParentExists(parentID uuid.UUID) error {
+	if parentID == uuid.Nil {
+		return nil
+	}
+
+	var id uuid.UUID
+	err := s.db.Get(&id, "SELECT id FROM todos WHERE id = ?", parentID)
+	if err != nil {
+		return fmt.Errorf("failed to get parent id: %w", err)
 	}
 	return nil
 }

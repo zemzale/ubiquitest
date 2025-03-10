@@ -17,12 +17,14 @@ func CreateDB(db *sqlx.DB) error {
 			title TEXT NOT NULL,
 			created_by INTEGER NOT NULL, 
 			completed BOOLEAN NOT NULL DEFAULT false,
-			completed_by INTEGER NULL
+			completed_by INTEGER NULL,
+			parent_id TEXT NULL
 		);
 	`)
 	if err != nil {
 		return fmt.Errorf("failed to create todos table: %w", err)
 	}
+
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
