@@ -69,7 +69,7 @@ function Loading() {
 function ListItems() {
     const query = useItems();
     const completeMutation = useCompleteItem();
-    
+
     if (!query.data) {
         return <></>;
     }
@@ -78,38 +78,73 @@ function ListItems() {
         completeMutation.mutate(id);
     };
 
+    // Sort items: incomplete tasks first, then completed tasks
+    const sortedItems = [...query.data].sort((a, b) => {
+        if (a.completed && !b.completed) return 1;
+        if (!a.completed && b.completed) return -1;
+        return 0;
+    });
+
+    // Group items into active and completed
+    const activeItems = sortedItems.filter(item => !item.completed);
+    const completedItems = sortedItems.filter(item => item.completed);
+    const hasCompletedItems = completedItems.length > 0;
+
     return <>
         <div className="w-full max-w-md mb-6 mt-6">
             <h2 className="text-xl font-semibold mb-4">Your Items</h2>
             <ul className="space-y-3">
-                {query.data.map((item) => (
+                {activeItems.map((item) => (
                     <li key={item.id}>
-                        <div className={`bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 ${item.completed ? 'opacity-60' : ''}`}>
+                        <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center">
                                     <div>
-                                        <h3 className={`font-medium ${item.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-                                            {item.title}
-                                        </h3>
+                                        <h3 className="font-medium text-gray-800">{item.title}</h3>
                                     </div>
                                 </div>
-                                {!item.completed && (
-                                    <button 
-                                        onClick={() => handleComplete(item.id)}
-                                        className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
-                                    >
-                                        Complete
-                                    </button>
-                                )}
-                                {item.completed && (
-                                    <span className="ml-2 text-green-600 text-sm font-medium">
-                                        ✓ Completed
-                                    </span>
-                                )}
+                                <button
+                                    onClick={() => handleComplete(item.id)}
+                                    className="ml-2 bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-sm"
+                                >
+                                    Complete
+                                </button>
                             </div>
                         </div>
                     </li>
                 ))}
+
+                {hasCompletedItems && (
+                    <>
+                        <li className="my-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-gray-300"></div>
+                                </div>
+                                <div className="relative flex justify-center">
+                                    <span className="bg-white px-2 text-sm text-gray-500">Completed Tasks</span>
+                                </div>
+                            </div>
+                        </li>
+
+                        {completedItems.map((item) => (
+                            <li key={item.id}>
+                                <div className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 opacity-60">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <div>
+                                                <h3 className="font-medium text-gray-500 line-through">{item.title}</h3>
+                                            </div>
+                                        </div>
+                                        <span className="ml-2 text-green-600 text-sm font-medium">
+                                            ✓ Completed
+                                        </span>
+                                    </div>
+                                </div>
+                            </li>
+                        ))}
+                    </>
+                )}
             </ul>
         </div>
     </>;
