@@ -18,21 +18,21 @@ export interface EnhancedWebSocket {
 const WebSocketContext = createContext<EnhancedWebSocket | null>(null);
 
 // Default retry configuration
-const DEFAULT_RECONNECT_DELAY_MS = 2000;
+const DEFAULT_RECONNECT_DELAY_MS = 10000;
 const MAX_RECONNECT_DELAY_MS = 30000;
-const RECONNECT_BACKOFF_FACTOR = 1.5;
-const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_BACKOFF_FACTOR = 3;
+const MAX_RECONNECT_ATTEMPTS = 3;
 
 export function useCreateWebsocket(user: string): EnhancedWebSocket {
     const queryClient = useQueryClient();
     const [status, setStatus] = useState<WebSocketStatus>('connecting');
     const [socket, setSocket] = useState<WebSocket | null>(null);
-    
+
     // Use refs to maintain state across re-renders and in event handlers
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const reconnectAttemptsRef = useRef(0);
     const currentDelayRef = useRef(DEFAULT_RECONNECT_DELAY_MS);
-    
+
     // Function to create a new socket connection
     const createSocket = () => {
         try {
@@ -41,13 +41,13 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                 clearTimeout(reconnectTimeoutRef.current);
                 reconnectTimeoutRef.current = null;
             }
-            
+
             // Update status to connecting
             setStatus('connecting');
-            
+
             // Create a new WebSocket connection
             const newWs = new WebSocket(`${env.NEXT_PUBLIC_API_URL}/ws/todos?user=${user}`);
-            
+
             // Configure event handlers
             newWs.addEventListener('open', () => {
                 console.log('WebSocket connected successfully');
@@ -55,7 +55,7 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                 reconnectAttemptsRef.current = 0;
                 currentDelayRef.current = DEFAULT_RECONNECT_DELAY_MS;
             });
-            
+
             newWs.addEventListener('close', (event) => {
                 console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
                 setStatus('disconnected');
@@ -65,15 +65,15 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                 }
                 setSocket(null);
             });
-            
+
             newWs.addEventListener('error', (error) => {
                 console.error('WebSocket error:', error);
                 // Error event is followed by close event, no need to set status or reconnect here
             });
-            
+
             newWs.addEventListener("message", (event) => {
                 console.log('WebSocket message received:', event.data);
-                
+
                 try {
                     const message = JSON.parse(event.data);
                     const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
@@ -83,13 +83,13 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                         if (exists) {
                             console.warn('Received task_created for existing task:', message.data.id);
                         }
-                        
+
                         // Handle both with and without parent_id
                         const newTask = message.data;
                         todos.push(newTask);
                         localStorage.setItem("todos", JSON.stringify(todos));
-                        console.log('Task created with ID:', newTask.id, 
-                                    newTask.parent_id ? `as a subtask of ${newTask.parent_id}` : 'as a top-level task');
+                        console.log('Task created with ID:', newTask.id,
+                            newTask.parent_id ? `as a subtask of ${newTask.parent_id}` : 'as a top-level task');
                     } else if (message.type === 'task_updated') {
                         const taskId = message.data.id;
 
@@ -123,7 +123,7 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                     console.error('Error processing WebSocket message:', error);
                 }
             });
-            
+
             // Update state with the new socket
             setSocket(newWs);
             return newWs;
@@ -134,27 +134,27 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
             return null;
         }
     };
-    
+
     // Schedule a reconnection attempt with exponential backoff
     const scheduleReconnect = () => {
         if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
             console.log(`Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`);
             return;
         }
-        
+
         reconnectAttemptsRef.current += 1;
-        
+
         // Calculate delay with exponential backoff
         const delay = Math.min(currentDelayRef.current, MAX_RECONNECT_DELAY_MS);
-        
+
         console.log(`Scheduling reconnect attempt ${reconnectAttemptsRef.current} in ${delay}ms`);
         setStatus('reconnecting');
-        
+
         // Schedule the reconnect attempt
         reconnectTimeoutRef.current = setTimeout(() => {
             console.log(`Attempting to reconnect (attempt ${reconnectAttemptsRef.current})`);
             createSocket();
-            
+
             // Increase delay for next attempt
             currentDelayRef.current = Math.min(
                 currentDelayRef.current * RECONNECT_BACKOFF_FACTOR,
@@ -162,40 +162,40 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
             );
         }, delay);
     };
-    
+
     // Function to manually trigger a reconnection
     const reconnect = () => {
         console.log('Manual reconnection initiated');
-        
+
         // Close existing socket if it's open
         if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
             socket.close();
         }
-        
+
         // Reset reconnection attempts for manual reconnections
         reconnectAttemptsRef.current = 0;
         currentDelayRef.current = DEFAULT_RECONNECT_DELAY_MS;
-        
+
         // Create a new socket immediately
         createSocket();
     };
-    
+
     // Initialize WebSocket connection when the component mounts or user changes
     useEffect(() => {
         const ws = createSocket();
-        
+
         // Cleanup function to close the socket and clear timeouts when unmounting
         return () => {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.close(1000, 'Component unmounted');
             }
-            
+
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
             }
         };
     }, [user]); // Recreate socket when user changes
-    
+
     // Create a wrapper for the send method that handles socket state
     const send = (data: string) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -206,7 +206,7 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
             // (Optional enhancement: could implement a message queue here)
         }
     };
-    
+
     // Return the enhanced WebSocket object
     return {
         socket,
