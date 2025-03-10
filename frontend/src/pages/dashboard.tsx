@@ -38,11 +38,9 @@ function Page({ user }: { user: User }) {
     return (
         <>
             <WebSocketProvider value={ws}>
-                <main className="flex min-h-screen flex-col items-center justify-center">
+                <Navbar user={user} />
+                <main className="flex min-h-screen flex-col items-center justify-center pt-16">
                     <h1 className="text-6xl font-bold mb-8">Welcome to Ubiquitodo!</h1>
-                    <p className="text-2xl mb-8">
-                        You have successfully logged in. {user.username}
-                    </p>
                     <ListItems />
                     <AddItem />
                     <Link
@@ -61,7 +59,12 @@ function Page({ user }: { user: User }) {
 function Loading() {
     return (
         <>
-            <main className="flex min-h-screen flex-col items-center justify-center">
+            <nav className="fixed top-0 left-0 right-0 bg-white shadow-md p-4 z-10">
+                <div className="container mx-auto flex justify-between items-center">
+                    <div className="font-bold text-xl">Ubiquitodo</div>
+                </div>
+            </nav>
+            <main className="flex min-h-screen flex-col items-center justify-center pt-16">
                 <p className="text-2xl mb-8">
                     Loading...
                 </p>
@@ -105,6 +108,25 @@ function Error() {
             Something went wrong
         </p>
     </>;
+}
+
+function Navbar({ user }: { user: User }) {
+    return (
+        <nav className="fixed top-0 left-0 right-0 bg-white shadow-md p-4 z-10">
+            <div className="container mx-auto flex justify-between items-center">
+                <div className="font-bold text-xl">Ubiquitodo</div>
+                <div className="flex items-center">
+                    <p className="mr-4">Logged in as: <span className="font-semibold">{user.username}</span></p>
+                    <Link
+                        href="/"
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-sm"
+                    >
+                        Logout
+                    </Link>
+                </div>
+            </div>
+        </nav>
+    );
 }
 
 
