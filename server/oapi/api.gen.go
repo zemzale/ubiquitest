@@ -31,6 +31,9 @@ type LoginResponse struct {
 
 // Todo defines model for Todo.
 type Todo struct {
+	// CreatedBy The username of the user who create the todo item
+	CreatedBy string `json:"created_by"`
+
 	// Id The ID of the todo item
 	Id openapi_types.UUID `json:"id"`
 

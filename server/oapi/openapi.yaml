@@ -93,6 +93,7 @@ components:
       required: 
         - id
         - title
+        - created_by
       properties:
         id:
           type: string
@@ -103,6 +104,10 @@ components:
           type: string
           description: The title of the todo item
           example: Buy groceries
+        created_by:
+          type: string
+          description: The username of the user who create the todo item
+          example: "user"
     LoginResponse:
       type: object
       required:
