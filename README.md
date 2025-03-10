@@ -85,6 +85,24 @@ And I know that there is working google library for working with UUID V4 and
 there is one for JS also. Meaning that if I want to create TODO items, they can
 also be create on the frontend without having to worry about ID collisions.
 
+### Skip auth for most routes
+
+I am just trying to move fast here and I am not going to worry about security
+here. 
+
+In real scenarios, I would add oauth and authentication middlewars to the routes (or even
+just have a gateway infront of the server that does that, for example KrakenD
+for multiservice deployments).
+
+Then there would also be logic of autherization, if the user even can view the
+other user's todos and info. Probabaly based on organizations where we would
+have N-N relationship for users and organizations. This would allow user with
+one login to be part of multiple organizations.
+
+This would heavily also impact the DB design, which is the reason why I am not
+adding that right now. We would have to add org_id to each task, and it just
+complicates things more than I have time for it.
+
 # Bugs
 
 - [x] When another user creates a new todo it's created two times on the other
