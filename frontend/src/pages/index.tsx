@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import React, { useEffect, useRef, useState } from "react";
 import { useLogin } from "~/query/user";
 
 export default function Home() {
@@ -22,28 +23,37 @@ export default function Home() {
 }
 
 function LoginFrom() {
-    const mutation = useLogin()
+    const mutation = useLogin();
     const router = useRouter();
+    const [isRedirecting, setIsRedirecting] = useState(false);
+
+    // Handle successful login and navigation to dashboard
+    useEffect(() => {
+        // Only run this effect if login was successful and we're not already redirecting
+        if (mutation.isSuccess && !isRedirecting) {
+            console.log('Login successful, redirecting to dashboard');
+            setIsRedirecting(true);
+            router.push("/dashboard");
+        }
+    }, [mutation.isSuccess, router, isRedirecting]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const form = e.target;
-        const formData = {
-            //@ts-ignore
-            username: form.elements.username.value,
-        };
+        // Prevent duplicate submissions
+        if (mutation.isPending || isRedirecting) {
+            console.log('Preventing duplicate login submission');
+            return;
+        }
 
-        mutation.mutate(formData);
 
+        const form = e.target as HTMLFormElement;
+        const usernameInput = form.elements.namedItem('username') as HTMLInputElement;
+        const username = usernameInput.value.trim();
+
+        console.log('Submitting login form with username:', username);
+        mutation.mutate({ username });
     }
-
-
-    if (mutation.isSuccess) {
-        router.push("/dashboard");
-        return <></>
-    }
-
 
     return <>
         <form
@@ -63,9 +73,13 @@ function LoginFrom() {
                     type="text"
                     placeholder="Enter your username"
                     required
+                    disabled={mutation.isPending}
                 />
-                <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
-                    Login
+                <button
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full"
+                    disabled={mutation.isPending}
+                >
+                    {mutation.isPending ? 'Logging in...' : 'Login'}
                 </button>
                 {mutation.isError ? <div className="mt-4">
                     <div className="mb-4 text-red-500 text-sm">

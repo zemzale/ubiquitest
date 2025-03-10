@@ -23,7 +23,7 @@ export function useItems() {
                     throw new Error('Failed to fetch tasks from server');
                 }
                 const serverTodos = await response.json() as Item[];
-                
+
                 // Store in localStorage for offline access
                 localStorage.setItem('todos', JSON.stringify(serverTodos));
                 console.log('Fetched todos from server:', serverTodos);
@@ -95,6 +95,11 @@ function postItem(ws: WebSocket, user: User) {
             delete item.parent_id;
         }
 
+        if (ws.readyState !== WebSocket.OPEN) {
+            console.error('WebSocket is not open, cannot send task_created message:', item);
+            return;
+        }
+
         ws.send(JSON.stringify({
             type: 'task_created',
             data: item,
@@ -161,16 +166,16 @@ export type ItemWithChildren = Item & { children: ItemWithChildren[] };
 export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
     const itemMap = new Map<string, ItemWithChildren>();
     const rootItems: ItemWithChildren[] = [];
-    
+
     // First pass: Create a map of all items with empty children arrays
     items.forEach(item => {
         itemMap.set(item.id, { ...item, children: [] });
     });
-    
+
     // Second pass: Organize items into tree structure
     items.forEach(item => {
         const enhancedItem = itemMap.get(item.id)!;
-        
+
         if (item.parent_id && itemMap.has(item.parent_id)) {
             // This is a child item, add it to its parent's children
             const parent = itemMap.get(item.parent_id)!;
@@ -180,7 +185,7 @@ export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
             rootItems.push(enhancedItem);
         }
     });
-    
+
     return rootItems;
 }
 
