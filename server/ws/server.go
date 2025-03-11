@@ -102,7 +102,7 @@ func (s *Server) handleConnection(c connection) {
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 					log.Println("failed to reply with error ", replyErr)
 				}
-				return
+				continue
 			}
 
 			s.broadcast(event, c)
@@ -136,7 +136,7 @@ func (s *Server) handleConnection(c connection) {
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 					log.Println("failed to reply with error ", replyErr)
 				}
-				return
+				continue
 			}
 
 			s.broadcast(event, c)
