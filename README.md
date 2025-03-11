@@ -1,3 +1,7 @@
+# Ubiquite Test
+
+Deployed frontend at: https://ubiquitest.netlify.app
+
 # Preface
 
 This todo app is done as part of the homework for backend role. I didn't apply to a
@@ -39,9 +43,6 @@ I included a single test just to show how I would test this. I am not a fan of
 mocks, so I didn't complicate the whole thing with interfaces, just to have
 mocks for testing, but for a larger project I would probably use mocks.  
 
-Other than that the site is at:
-
-https://ubiquitest.netlify.app
 
 Use a unique name for the login, and you can create tasks and see others create
 them in real time in one board.
