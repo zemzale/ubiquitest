@@ -1,27 +1,39 @@
 # Preface
 
-This todo is done as part as the homework for backend role. I didn't apply to a
-fullstack role, nor the description of the role had that, BUT I know enough
-react to be dangerous and made it work.
+This todo app is done as part of the homework for backend role. I didn't apply to a
+fullstack role, nor the description of the role had any metions of React/TS. But I know enough
+React to be dangerous so I made it work.
 
 The FE took longer than I wanted to, so that is why the server part might not be
-up to my standards. I also used a AI to help me with frontend side, since I have
-not actually used react in quite a while, but I know enough about it that I can
-make soemthing working (not all of it is good though).
+up to my standards. I used quite a lot AI to help me with frontend side, since I have
+not actually used react in quite a while, but I was able to get it working.
 
-The way how backend is done is not the up to my standards. We are missing greacefull shutdown,
-better connection handling with channels and other things, but I sacraficed some
-qulity for speed.
+There are some thigns missing on the backend side that I would usually include
+like:
+- greacefull shutdown,
+- better connection handling with channels 
+- proper authentication
+- better logging
+- metrics
+- tracing
+- and other things
 
-But I worked on this how I would have done it with a new projcet that I am
-trying to prototye. 
+But I had very little time to do this, so I sacraficed them for speed, not
+because I don't know how to do them. This is a good example of a prototye I
+would create, not a production ready app.
 
 You can mostly review the commit history, I didn't keep the greatest git commit
-naming, I sacrafied it for speed.
+naming, also sacrafied it for speed.
 
 I kept the code very simple, but extensible enough that I could keep extending
 and refactoring this as the project would grow, and I wouldn't need to review
 huge parts.
+
+I used some DDD by trying to model the domain entities and their actions, but
+there are some parts of users and maybe tasks that are not fully switched over
+to the DDD approach yet. I also inlined all the database logic since splitting
+it out for project of this size would have been a waste. Usually that would be
+part of another module.
 
 I included a single test just to show how I would test this. I am not a fan of
 mocks, so I didn't complicate the whole thing with interfaces, just to have
@@ -30,6 +42,9 @@ mocks for testing, but for a larger project I would probably use mocks.
 Other than that the site is at:
 
 https://ubiquitest.netlify.app
+
+Use a unique name for the login, and you can create tasks and see others create
+them in real time in one board.
 
 There might be some bugs that I don't know about, but for most part all the
 things can be reset by logging out and refreshing the page.
@@ -103,7 +118,7 @@ In real scenarios, I would add oauth and authentication middlewars to the routes
 just have a gateway infront of the server that does that, for example KrakenD
 for multiservice deployments).
 
-Then there would also be logic of autherization, if the user even can view the
+Then there would also be logic of authorization, if the user even can view the
 other user's todos and info. Probabaly based on organizations where we would
 have N-N relationship for users and organizations. This would allow user with
 one login to be part of multiple organizations.
