@@ -1,4 +1,4 @@
-# Ubiquite Test
+# Ubiquiti Test
 
 Deployed frontend at: https://ubiquitest.netlify.app
 
