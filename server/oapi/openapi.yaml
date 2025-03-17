@@ -151,6 +151,11 @@ components:
           type: boolean
           description: Whether the todo item is completed
           example: false
+        parent_id:
+          type: string
+          format: uuid
+          description: The ID of the parent todo item
+          example: c0a0c2c7-a7b6-4e4c-b8a9-c3a4f9c9d0e1
     LoginResponse:
       type: object
       required:

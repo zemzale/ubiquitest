@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/lo"
@@ -51,7 +52,7 @@ func Run(db *sqlx.DB) error {
 func setupRoutes(r *Router, mux *chi.Mux) {
 	mux.Use(middleware.Logger)
 	mux.Use(cors.New(cors.Options{
-		AllowedOrigins: []string{"https://ubiquitest.netlify.app"},
+		AllowedOrigins: []string{"https://ubiquitest.netlify.app", "http://localhost:3000"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}).Handler)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
@@ -67,7 +68,14 @@ func printDebugRoutes(mux *chi.Mux) {
 func (r *Router) PostTodos(
 	ctx context.Context, request oapi.PostTodosRequestObject,
 ) (oapi.PostTodosResponseObject, error) {
-	result, err := r.db.Exec("INSERT INTO todos (id, title ) VALUES (?, ?)", request.Body.Id, request.Body.Title)
+	query := "INSERT INTO todos (id, title, created_by, completed ) VALUES (?, ?, ?, ?)"
+	args := []any{request.Body.Id, request.Body.Title, request.Body.CreatedBy, request.Body.Completed}
+	if request.Body.ParentId != nil {
+		query = "INSERT INTO todos (id, title, created_by, completed, parent_id ) VALUES (?, ?, ?, ?, ?)"
+		args = append(args, request.Body.ParentId)
+	}
+
+	result, err := r.db.Exec(query, args...)
 	if err != nil {
 		return oapi.PostTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
@@ -100,7 +108,19 @@ func (r *Router) GetTodos(
 
 	return oapi.GetTodos200JSONResponse(
 		lo.Map(taskList, func(t tasks.Task, _ int) oapi.Todo {
-			return oapi.Todo{Id: t.ID, Title: t.Title, CreatedBy: t.CreatedBy, Completed: t.Completed}
+			return oapi.Todo{
+				Id:        t.ID,
+				Title:     t.Title,
+				CreatedBy: t.CreatedBy,
+				Completed: t.Completed,
+				ParentId: func() *uuid.UUID {
+					if t.ParentID == uuid.Nil {
+						return nil
+					}
+
+					return &t.ParentID
+				}(),
+			}
 		}),
 	), nil
 }

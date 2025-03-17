@@ -95,6 +95,7 @@ func (s *Server) handleConnection(c connection) {
 				ID:        taskCreated.Id,
 				Title:     taskCreated.Title,
 				CreatedBy: taskCreated.CreatedBy,
+				ParentID:  taskCreated.ParentId,
 			}
 
 			if err := s.storeTask.Run(task); err != nil {

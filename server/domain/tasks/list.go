@@ -1,7 +1,9 @@
 package tasks
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -16,7 +18,7 @@ func NewList(db *sqlx.DB) *List {
 }
 
 func (l *List) Run() ([]Task, error) {
-	rows, err := l.db.Query("SELECT id, title, created_by, completed FROM todos")
+	rows, err := l.db.Query("SELECT id, title, created_by, parent_id, completed FROM todos")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query todos: %w", err)
 	}
@@ -29,8 +31,9 @@ func (l *List) Run() ([]Task, error) {
 		var id string
 		var title string
 		var createdBy uint
+		var parentID sql.NullString
 		var completed bool
-		if err := rows.Scan(&id, &title, &createdBy, &completed); err != nil {
+		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed); err != nil {
 			return nil, fmt.Errorf("failed to scan todos: %w", err)
 		}
 
@@ -43,7 +46,22 @@ func (l *List) Run() ([]Task, error) {
 			users[createdBy] = username
 		}
 
-		todos = append(todos, Task{ID: uuid.MustParse(id), Title: title, CreatedBy: createdBy, Completed: completed})
+		parentUUID := uuid.Nil
+		if parentID.Valid {
+			parentUUID, err = uuid.Parse(parentID.String)
+			if err != nil {
+				log.Println("failed to parse parent id:", err)
+				parentUUID = uuid.Nil
+			}
+		}
+
+		todos = append(todos, Task{
+			ID:        uuid.MustParse(id),
+			Title:     title,
+			CreatedBy: createdBy,
+			Completed: completed,
+			ParentID:  parentUUID,
+		})
 	}
 
 	return todos, nil

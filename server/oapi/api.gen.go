@@ -41,6 +41,9 @@ type Todo struct {
 	// Id The ID of the todo item
 	Id openapi_types.UUID `json:"id"`
 
+	// ParentId The ID of the parent todo item
+	ParentId *openapi_types.UUID `json:"parent_id,omitempty"`
+
 	// Title The title of the todo item
 	Title string `json:"title"`
 }

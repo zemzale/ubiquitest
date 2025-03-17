@@ -50,6 +50,7 @@ type EventTaskCreated struct {
 	Id        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
 	CreatedBy uint      `json:"created_by"`
+	ParentId  uuid.UUID `json:"parent_id"`
 }
 
 type EventTaskUpdated struct {
