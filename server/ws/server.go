@@ -81,7 +81,7 @@ func (s *Server) handleConnection(c connection) {
 		}
 
 		switch event.EventType {
-		case "task_created":
+		case EventTypeTaskCreated:
 			log.Println("received task_created event from user ", c.user)
 			taskCreated, err := event.AsEventTaskCreated()
 			if err != nil {
