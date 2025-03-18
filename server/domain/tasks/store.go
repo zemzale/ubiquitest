@@ -9,18 +9,25 @@ import (
 )
 
 type Store struct {
-	db         *sqlx.DB
+	db *sqlx.DB
+	// TOOD Fix the name typo and name
 	insertTask *storage.TaksRepository
+	userRepo   *storage.UserRepository
 }
 
-func NewStore(db *sqlx.DB, insertTask *storage.TaksRepository) *Store {
-	return &Store{db: db, insertTask: insertTask}
+func NewStore(db *sqlx.DB, insertTask *storage.TaksRepository, userRepo *storage.UserRepository) *Store {
+	return &Store{db: db, insertTask: insertTask, userRepo: userRepo}
 }
 
 func (s *Store) Run(task Task) error {
-	err := s.checkUserExists(task.CreatedBy)
+	// TODO: Use storage for checking user stuff
+	userExists, err := s.userRepo.Exists(task.CreatedBy)
 	if err != nil {
-		return fmt.Errorf("failed to get user id: %w", err)
+		return err
+	}
+
+	if !userExists {
+		return fmt.Errorf("user doesn't exist")
 	}
 
 	err = s.checkIfParentExists(task.ParentID)
@@ -32,15 +39,6 @@ func (s *Store) Run(task Task) error {
 		return fmt.Errorf("failed to insert task: %w", err)
 	}
 
-	return nil
-}
-
-func (s *Store) checkUserExists(userID uint) error {
-	var id uint
-	err := s.db.Get(&id, "SELECT id FROM users WHERE id = ?", userID)
-	if err != nil {
-		return fmt.Errorf("failed to get user id: %w", err)
-	}
 	return nil
 }
 
