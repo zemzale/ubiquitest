@@ -47,8 +47,7 @@ func (s *Store) checkIfParentExists(parentID uuid.UUID) error {
 		return nil
 	}
 
-	var id uuid.UUID
-	err := s.db.Get(&id, "SELECT id FROM tasks WHERE id = ?", parentID)
+	err := s.insertTask.CheckIfParentExists(parentID.String())
 	if err != nil {
 		return fmt.Errorf("failed to get parent id: %w", err)
 	}

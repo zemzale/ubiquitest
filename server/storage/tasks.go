@@ -45,3 +45,13 @@ func (r *TaksRepository) Create(todo Task) error {
 
 	return nil
 }
+
+func (s *TaksRepository) CheckIfParentExists(parentID string) error {
+	var id string
+	err := s.db.Get(&id, "SELECT id FROM tasks WHERE id = ?", parentID)
+	if err != nil {
+		return fmt.Errorf("failed to get parent id: %w", err)
+	}
+
+	return nil
+}
