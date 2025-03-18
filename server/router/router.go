@@ -19,15 +19,23 @@ import (
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
 type Router struct {
-	db         *sqlx.DB
-	ws         *ws.Server
-	list       *tasks.List
-	upsertUser *users.FindOrCreate
-	storeTask  *tasks.Store
+	db           *sqlx.DB
+	ws           *ws.Server
+	list         *tasks.List
+	upsertUser   *users.FindOrCreate
+	storeTask    *tasks.Store
+	userFindByID *users.FindByID
 }
 
 func NewRouter(db *sqlx.DB) *Router {
-	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db), upsertUser: users.NewFindOrCreate(db), storeTask: tasks.NewStore(db)}
+	return &Router{
+		db:           db,
+		ws:           ws.NewServer(db),
+		list:         tasks.NewList(db),
+		upsertUser:   users.NewFindOrCreate(db),
+		storeTask:    tasks.NewStore(db),
+		userFindByID: users.NewFindById(db),
+	}
 }
 
 func Run(db *sqlx.DB) error {

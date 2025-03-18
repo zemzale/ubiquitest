@@ -19,14 +19,10 @@ func (r *Router) PostLogin(
 }
 
 func (r *Router) GetUserId(ctx context.Context, request oapi.GetUserIdRequestObject) (oapi.GetUserIdResponseObject, error) {
-	// TODO: Move this do domain
-	var user struct {
-		Id       uint   `db:"id"`
-		Username string `db:"username"`
-	}
-	err := r.db.Get(&user, "SELECT * FROM users where id=?", request.Id)
+	user, err := r.userFindByID.Run(request.Id)
 	if err != nil {
-		return oapi.GetUserId500JSONResponse{Error: lo.ToPtr("Internal server error")}, nil
+		return oapi.GetUserId500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
-	return oapi.GetUserId200JSONResponse{Id: user.Id, Username: user.Username}, nil
+
+	return oapi.GetUserId200JSONResponse{Id: user.ID, Username: user.Username}, nil
 }
