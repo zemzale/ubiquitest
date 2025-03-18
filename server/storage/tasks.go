@@ -10,7 +10,7 @@ import (
 type Task struct {
 	ID          string           `db:"id"`
 	Title       string           `db:"title"`
-	CreatedBy   int              `db:"created_by"`
+	CreatedBy   uint             `db:"created_by"`
 	Completed   bool             `db:"completed"`
 	CompletedBy sql.Null[uint]   `db:"completed_by"`
 	ParentID    sql.Null[string] `db:"parent_id"`

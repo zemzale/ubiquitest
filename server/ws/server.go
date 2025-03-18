@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
 type connection struct {
@@ -31,7 +32,7 @@ func NewServer(db *sqlx.DB) *Server {
 
 		db: db,
 
-		storeTask:  tasks.NewStore(db),
+		storeTask:  tasks.NewStore(db, storage.NewTaskRepository(db)),
 		updateTask: tasks.NewUpdate(db),
 	}
 }

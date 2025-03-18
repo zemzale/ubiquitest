@@ -13,6 +13,7 @@ import (
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
+	"github.com/zemzale/ubiquitest/storage"
 	"github.com/zemzale/ubiquitest/ws"
 )
 
@@ -33,7 +34,7 @@ func NewRouter(db *sqlx.DB) *Router {
 		ws:           ws.NewServer(db),
 		list:         tasks.NewList(db),
 		upsertUser:   users.NewFindOrCreate(db),
-		storeTask:    tasks.NewStore(db),
+		storeTask:    tasks.NewStore(db, storage.NewTaskRepository(db)),
 		userFindByID: users.NewFindById(db),
 	}
 }

@@ -5,14 +5,16 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
 type Store struct {
-	db *sqlx.DB
+	db         *sqlx.DB
+	insertTask *storage.TaksRepository
 }
 
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{db: db}
+func NewStore(db *sqlx.DB, insertTask *storage.TaksRepository) *Store {
+	return &Store{db: db, insertTask: insertTask}
 }
 
 func (s *Store) Run(task Task) error {
@@ -25,21 +27,9 @@ func (s *Store) Run(task Task) error {
 	if err != nil {
 		return fmt.Errorf("failed to check if parent exists: %w", err)
 	}
-	result, err := s.db.Exec(
-		"INSERT INTO tasks (id, title, created_by, parent_id) VALUES (?, ?, ?, ?)",
-		task.ID.String(), task.Title, task.CreatedBy, task.ParentID.String(),
-	)
-	if err != nil {
+
+	if err := s.insertTask.Create(mapNewTaskToDB(task)); err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
-	}
-
-	res, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-
-	if res == 0 {
-		return fmt.Errorf("no rows affected")
 	}
 
 	return nil
