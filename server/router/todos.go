@@ -12,21 +12,20 @@ import (
 func (r *Router) PostTodos(
 	ctx context.Context, request oapi.PostTodosRequestObject,
 ) (oapi.PostTodosResponseObject, error) {
-	// TODO: Move this to domain
-	query := "INSERT INTO todos (id, title, created_by, completed ) VALUES (?, ?, ?, ?)"
-	args := []any{request.Body.Id, request.Body.Title, request.Body.CreatedBy, request.Body.Completed}
+	parnetID := uuid.Nil
 	if request.Body.ParentId != nil {
-		query = "INSERT INTO todos (id, title, created_by, completed, parent_id ) VALUES (?, ?, ?, ?, ?)"
-		args = append(args, request.Body.ParentId)
+		parnetID = *request.Body.ParentId
 	}
 
-	result, err := r.db.Exec(query, args...)
+	err := r.storeTask.Run(tasks.Task{
+		ID:        request.Body.Id,
+		Title:     request.Body.Title,
+		CreatedBy: request.Body.CreatedBy,
+		Completed: false,
+		ParentID:  parnetID,
+	})
 	if err != nil {
 		return oapi.PostTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
-	}
-
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return oapi.PostTodos400JSONResponse{Error: lo.ToPtr("item already exists")}, nil
 	}
 
 	return oapi.PostTodos201Response{}, nil

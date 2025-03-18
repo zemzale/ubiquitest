@@ -23,10 +23,11 @@ type Router struct {
 	ws         *ws.Server
 	list       *tasks.List
 	upsertUser *users.FindOrCreate
+	storeTask  *tasks.Store
 }
 
 func NewRouter(db *sqlx.DB) *Router {
-	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db), upsertUser: users.NewFindOrCreate(db)}
+	return &Router{db: db, ws: ws.NewServer(db), list: tasks.NewList(db), upsertUser: users.NewFindOrCreate(db), storeTask: tasks.NewStore(db)}
 }
 
 func Run(db *sqlx.DB) error {
