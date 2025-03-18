@@ -57,8 +57,8 @@ type PostLoginJSONBody struct {
 // PostLoginJSONRequestBody defines body for PostLogin for application/json ContentType.
 type PostLoginJSONRequestBody PostLoginJSONBody
 
-// PostTodosJSONRequestBody defines body for PostTodos for application/json ContentType.
-type PostTodosJSONRequestBody = Todo
+// PostTasksJSONRequestBody defines body for PostTasks for application/json ContentType.
+type PostTasksJSONRequestBody = Todo
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -66,11 +66,11 @@ type ServerInterface interface {
 	// (POST /login)
 	PostLogin(w http.ResponseWriter, r *http.Request)
 	// Get all todo items
-	// (GET /todos)
-	GetTodos(w http.ResponseWriter, r *http.Request)
+	// (GET /tasks)
+	GetTasks(w http.ResponseWriter, r *http.Request)
 	// Create a new todo item
-	// (POST /todos)
-	PostTodos(w http.ResponseWriter, r *http.Request)
+	// (POST /tasks)
+	PostTasks(w http.ResponseWriter, r *http.Request)
 	// Get user by id
 	// (GET /user/{id})
 	GetUserId(w http.ResponseWriter, r *http.Request, id uint)
@@ -87,14 +87,14 @@ func (_ Unimplemented) PostLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get all todo items
-// (GET /todos)
-func (_ Unimplemented) GetTodos(w http.ResponseWriter, r *http.Request) {
+// (GET /tasks)
+func (_ Unimplemented) GetTasks(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new todo item
-// (POST /todos)
-func (_ Unimplemented) PostTodos(w http.ResponseWriter, r *http.Request) {
+// (POST /tasks)
+func (_ Unimplemented) PostTasks(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -127,11 +127,11 @@ func (siw *ServerInterfaceWrapper) PostLogin(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
-// GetTodos operation middleware
-func (siw *ServerInterfaceWrapper) GetTodos(w http.ResponseWriter, r *http.Request) {
+// GetTasks operation middleware
+func (siw *ServerInterfaceWrapper) GetTasks(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTodos(w, r)
+		siw.Handler.GetTasks(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -141,11 +141,11 @@ func (siw *ServerInterfaceWrapper) GetTodos(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
-// PostTodos operation middleware
-func (siw *ServerInterfaceWrapper) PostTodos(w http.ResponseWriter, r *http.Request) {
+// PostTasks operation middleware
+func (siw *ServerInterfaceWrapper) PostTasks(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostTodos(w, r)
+		siw.Handler.PostTasks(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -297,10 +297,10 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/login", wrapper.PostLogin)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/todos", wrapper.GetTodos)
+		r.Get(options.BaseURL+"/tasks", wrapper.GetTasks)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/todos", wrapper.PostTodos)
+		r.Post(options.BaseURL+"/tasks", wrapper.PostTasks)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/user/{id}", wrapper.GetUserId)
@@ -353,59 +353,59 @@ func (response PostLogin500JSONResponse) VisitPostLoginResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTodosRequestObject struct {
+type GetTasksRequestObject struct {
 }
 
-type GetTodosResponseObject interface {
-	VisitGetTodosResponse(w http.ResponseWriter) error
+type GetTasksResponseObject interface {
+	VisitGetTasksResponse(w http.ResponseWriter) error
 }
 
-type GetTodos200JSONResponse []Todo
+type GetTasks200JSONResponse []Todo
 
-func (response GetTodos200JSONResponse) VisitGetTodosResponse(w http.ResponseWriter) error {
+func (response GetTasks200JSONResponse) VisitGetTasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetTodos500JSONResponse Error
+type GetTasks500JSONResponse Error
 
-func (response GetTodos500JSONResponse) VisitGetTodosResponse(w http.ResponseWriter) error {
+func (response GetTasks500JSONResponse) VisitGetTasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostTodosRequestObject struct {
-	Body *PostTodosJSONRequestBody
+type PostTasksRequestObject struct {
+	Body *PostTasksJSONRequestBody
 }
 
-type PostTodosResponseObject interface {
-	VisitPostTodosResponse(w http.ResponseWriter) error
+type PostTasksResponseObject interface {
+	VisitPostTasksResponse(w http.ResponseWriter) error
 }
 
-type PostTodos201Response struct {
+type PostTasks201Response struct {
 }
 
-func (response PostTodos201Response) VisitPostTodosResponse(w http.ResponseWriter) error {
+func (response PostTasks201Response) VisitPostTasksResponse(w http.ResponseWriter) error {
 	w.WriteHeader(201)
 	return nil
 }
 
-type PostTodos400JSONResponse Error
+type PostTasks400JSONResponse Error
 
-func (response PostTodos400JSONResponse) VisitPostTodosResponse(w http.ResponseWriter) error {
+func (response PostTasks400JSONResponse) VisitPostTasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
 
 	return json.NewEncoder(w).Encode(response)
 }
 
-type PostTodos500JSONResponse Error
+type PostTasks500JSONResponse Error
 
-func (response PostTodos500JSONResponse) VisitPostTodosResponse(w http.ResponseWriter) error {
+func (response PostTasks500JSONResponse) VisitPostTasksResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -462,11 +462,11 @@ type StrictServerInterface interface {
 	// (POST /login)
 	PostLogin(ctx context.Context, request PostLoginRequestObject) (PostLoginResponseObject, error)
 	// Get all todo items
-	// (GET /todos)
-	GetTodos(ctx context.Context, request GetTodosRequestObject) (GetTodosResponseObject, error)
+	// (GET /tasks)
+	GetTasks(ctx context.Context, request GetTasksRequestObject) (GetTasksResponseObject, error)
 	// Create a new todo item
-	// (POST /todos)
-	PostTodos(ctx context.Context, request PostTodosRequestObject) (PostTodosResponseObject, error)
+	// (POST /tasks)
+	PostTasks(ctx context.Context, request PostTasksRequestObject) (PostTasksResponseObject, error)
 	// Get user by id
 	// (GET /user/{id})
 	GetUserId(ctx context.Context, request GetUserIdRequestObject) (GetUserIdResponseObject, error)
@@ -532,23 +532,23 @@ func (sh *strictHandler) PostLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetTodos operation middleware
-func (sh *strictHandler) GetTodos(w http.ResponseWriter, r *http.Request) {
-	var request GetTodosRequestObject
+// GetTasks operation middleware
+func (sh *strictHandler) GetTasks(w http.ResponseWriter, r *http.Request) {
+	var request GetTasksRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetTodos(ctx, request.(GetTodosRequestObject))
+		return sh.ssi.GetTasks(ctx, request.(GetTasksRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetTodos")
+		handler = middleware(handler, "GetTasks")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetTodosResponseObject); ok {
-		if err := validResponse.VisitGetTodosResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetTasksResponseObject); ok {
+		if err := validResponse.VisitGetTasksResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -556,11 +556,11 @@ func (sh *strictHandler) GetTodos(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PostTodos operation middleware
-func (sh *strictHandler) PostTodos(w http.ResponseWriter, r *http.Request) {
-	var request PostTodosRequestObject
+// PostTasks operation middleware
+func (sh *strictHandler) PostTasks(w http.ResponseWriter, r *http.Request) {
+	var request PostTasksRequestObject
 
-	var body PostTodosJSONRequestBody
+	var body PostTasksJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
 		return
@@ -568,18 +568,18 @@ func (sh *strictHandler) PostTodos(w http.ResponseWriter, r *http.Request) {
 	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.PostTodos(ctx, request.(PostTodosRequestObject))
+		return sh.ssi.PostTasks(ctx, request.(PostTasksRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "PostTodos")
+		handler = middleware(handler, "PostTasks")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(PostTodosResponseObject); ok {
-		if err := validResponse.VisitPostTodosResponse(w); err != nil {
+	} else if validResponse, ok := response.(PostTasksResponseObject); ok {
+		if err := validResponse.VisitPostTasksResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

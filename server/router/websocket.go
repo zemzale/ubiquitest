@@ -15,7 +15,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (r *Router) WsTodos(writer http.ResponseWriter, request *http.Request) {
+func (r *Router) WsTasks(writer http.ResponseWriter, request *http.Request) {
 	username := request.URL.Query().Get("user")
 	if username == "" {
 		log.Println("No user name provided")

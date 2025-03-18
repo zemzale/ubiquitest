@@ -81,12 +81,12 @@ function ListItems() {
         completeMutation.mutate(id);
     };
 
-    // Function to force refresh todos from server
+    // Function to force refresh tasks from server
     const handleRefresh = () => {
         // Remove the flag to trigger a server fetch
-        localStorage.removeItem('hasFetchedTodos');
+        localStorage.removeItem('hasFetchedTasks');
         // Invalidate the query to trigger a refetch
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
     };
 
     // Sort items: incomplete tasks first, then completed tasks
@@ -310,13 +310,13 @@ function Navbar({ user, onAddTask }: { user: User, onAddTask: () => void }) {
     const { status, reconnect } = useWebsocket();
 
     const handleLogout = () => {
-        // Remove user data and todos
+        // Remove user data and tasks
         localStorage.removeItem('user');
-        localStorage.removeItem('todos');
+        localStorage.removeItem('tasks');
 
         // Also remove the flag that tracks todo fetching
         // This means the user will get a fresh todo fetch on next login
-        localStorage.removeItem('hasFetchedTodos');
+        localStorage.removeItem('hasFetchedTasks');
 
         router.push('/');
     };

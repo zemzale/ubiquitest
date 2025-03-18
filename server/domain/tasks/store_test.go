@@ -62,7 +62,7 @@ func TestStore(t *testing.T) {
 			assert.NoError(t, action.Run(tt.giveTask), "failed to run task")
 
 			var id string
-			err = db.Get(&id, "SELECT id FROM todos WHERE id = ?", tt.giveTask.ID.String())
+			err = db.Get(&id, "SELECT id FROM tasks WHERE id = ?", tt.giveTask.ID.String())
 			require.NoError(t, err, "failed to get task id from DB")
 			assert.Equal(t, tt.giveTask.ID.String(), id, "task id does not match expected")
 		})

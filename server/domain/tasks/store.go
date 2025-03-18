@@ -26,7 +26,7 @@ func (s *Store) Run(task Task) error {
 		return fmt.Errorf("failed to check if parent exists: %w", err)
 	}
 	result, err := s.db.Exec(
-		"INSERT INTO todos (id, title, created_by, parent_id) VALUES (?, ?, ?, ?)",
+		"INSERT INTO tasks (id, title, created_by, parent_id) VALUES (?, ?, ?, ?)",
 		task.ID.String(), task.Title, task.CreatedBy, task.ParentID.String(),
 	)
 	if err != nil {
@@ -60,7 +60,7 @@ func (s *Store) checkIfParentExists(parentID uuid.UUID) error {
 	}
 
 	var id uuid.UUID
-	err := s.db.Get(&id, "SELECT id FROM todos WHERE id = ?", parentID)
+	err := s.db.Get(&id, "SELECT id FROM tasks WHERE id = ?", parentID)
 	if err != nil {
 		return fmt.Errorf("failed to get parent id: %w", err)
 	}

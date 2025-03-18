@@ -9,9 +9,9 @@ import (
 	"github.com/zemzale/ubiquitest/oapi"
 )
 
-func (r *Router) PostTodos(
-	ctx context.Context, request oapi.PostTodosRequestObject,
-) (oapi.PostTodosResponseObject, error) {
+func (r *Router) PostTasks(
+	ctx context.Context, request oapi.PostTasksRequestObject,
+) (oapi.PostTasksResponseObject, error) {
 	parnetID := uuid.Nil
 	if request.Body.ParentId != nil {
 		parnetID = *request.Body.ParentId
@@ -25,21 +25,21 @@ func (r *Router) PostTodos(
 		ParentID:  parnetID,
 	})
 	if err != nil {
-		return oapi.PostTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+		return oapi.PostTasks500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
 
-	return oapi.PostTodos201Response{}, nil
+	return oapi.PostTasks201Response{}, nil
 }
 
-func (r *Router) GetTodos(
-	ctx context.Context, request oapi.GetTodosRequestObject,
-) (oapi.GetTodosResponseObject, error) {
+func (r *Router) GetTasks(
+	ctx context.Context, request oapi.GetTasksRequestObject,
+) (oapi.GetTasksResponseObject, error) {
 	taskList, err := r.list.Run()
 	if err != nil {
-		return oapi.GetTodos500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
+		return oapi.GetTasks500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
 
-	return oapi.GetTodos200JSONResponse(
+	return oapi.GetTasks200JSONResponse(
 		lo.Map(taskList, func(t tasks.Task, _ int) oapi.Todo {
 			return oapi.Todo{
 				Id:        t.ID,

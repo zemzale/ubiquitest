@@ -12,7 +12,7 @@ func NewDB() (*sqlx.DB, error) {
 
 func CreateDB(db *sqlx.DB) error {
 	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS todos (
+		CREATE TABLE IF NOT EXISTS tasks (
 			id TEXT PRIMARY KEY,
 			title TEXT NOT NULL,
 			created_by INTEGER NOT NULL, 
@@ -22,7 +22,7 @@ func CreateDB(db *sqlx.DB) error {
 		);
 	`)
 	if err != nil {
-		return fmt.Errorf("failed to create todos table: %w", err)
+		return fmt.Errorf("failed to create tasks table: %w", err)
 	}
 
 	_, err = db.Exec(`
@@ -32,7 +32,7 @@ func CreateDB(db *sqlx.DB) error {
 		);
 	`)
 	if err != nil {
-		return fmt.Errorf("failed to create todos table: %w", err)
+		return fmt.Errorf("failed to create users table: %w", err)
 	}
 	return nil
 }

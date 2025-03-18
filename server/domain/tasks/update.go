@@ -20,7 +20,7 @@ func (u *Update) Run(task Task, userID uint) error {
 	}
 
 	result, err := u.db.Exec(
-		"UPDATE todos SET title = ?, completed = ?, completed_by = ? WHERE id = ?",
+		"UPDATE tasks SET title = ?, completed = ?, completed_by = ? WHERE id = ?",
 		task.Title, task.Completed, nil, task.ID.String(),
 	)
 	if err != nil {
@@ -41,7 +41,7 @@ func (u *Update) Run(task Task, userID uint) error {
 
 func (u *Update) completeTask(task Task, userID uint) error {
 	result, err := u.db.Exec(
-		"UPDATE todos SET title = ?, completed = ?, completed_by = ? WHERE id = ?",
+		"UPDATE tasks SET title = ?, completed = ?, completed_by = ? WHERE id = ?",
 		task.Title, task.Completed, userID, task.ID.String(),
 	)
 	if err != nil {

@@ -18,15 +18,15 @@ func NewList(db *sqlx.DB) *List {
 }
 
 func (l *List) Run() ([]Task, error) {
-	rows, err := l.db.Query("SELECT id, title, created_by, parent_id, completed FROM todos")
+	rows, err := l.db.Query("SELECT id, title, created_by, parent_id, completed FROM tasks")
 	if err != nil {
-		return nil, fmt.Errorf("failed to query todos: %w", err)
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
 	}
 
 	// TODO: Move this to some sort of cache
 	users := make(map[uint]string)
 
-	todos := make([]Task, 0)
+	tasks := make([]Task, 0)
 	for rows.Next() {
 		var id string
 		var title string
@@ -34,7 +34,7 @@ func (l *List) Run() ([]Task, error) {
 		var parentID sql.NullString
 		var completed bool
 		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed); err != nil {
-			return nil, fmt.Errorf("failed to scan todos: %w", err)
+			return nil, fmt.Errorf("failed to scan tasks: %w", err)
 		}
 
 		username, ok := users[createdBy]
@@ -55,7 +55,7 @@ func (l *List) Run() ([]Task, error) {
 			}
 		}
 
-		todos = append(todos, Task{
+		tasks = append(tasks, Task{
 			ID:        uuid.MustParse(id),
 			Title:     title,
 			CreatedBy: createdBy,
@@ -64,5 +64,5 @@ func (l *List) Run() ([]Task, error) {
 		})
 	}
 
-	return todos, nil
+	return tasks, nil
 }

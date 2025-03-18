@@ -60,7 +60,7 @@ func setupRoutes(r *Router, mux *chi.Mux) {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}).Handler)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
-	mux.HandleFunc("/ws/todos", r.WsTodos)
+	mux.HandleFunc("/ws/tasks", r.WsTasks)
 }
 
 func printDebugRoutes(mux *chi.Mux) {

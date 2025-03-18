@@ -50,7 +50,7 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
             setStatus('connecting');
 
             // Create a new WebSocket connection
-            const newWs = new WebSocket(`${env.NEXT_PUBLIC_API_URL}/ws/todos?user=${user}`);
+            const newWs = new WebSocket(`${env.NEXT_PUBLIC_API_URL}/ws/tasks?user=${user}`);
 
             // Configure event handlers
             newWs.addEventListener('open', () => {
@@ -58,20 +58,20 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                 setStatus('connected');
                 reconnectAttemptsRef.current = 0;
                 currentDelayRef.current = DEFAULT_RECONNECT_DELAY_MS;
-                
+
                 // Setup ping interval to keep connection alive
                 if (pingIntervalRef.current) {
                     clearInterval(pingIntervalRef.current);
                 }
-                
+
                 // Keep track of ping count to reduce logging
                 let pingCount = 0;
-                
+
                 pingIntervalRef.current = setInterval(() => {
                     if (newWs.readyState === WebSocket.OPEN) {
                         // Send a ping message to keep the connection alive
                         newWs.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-                        
+
                     }
                 }, PING_INTERVAL_MS);
             });
@@ -79,13 +79,13 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
             newWs.addEventListener('close', (event) => {
                 console.log(`WebSocket closed with code ${event.code}, reason: ${event.reason}`);
                 setStatus('disconnected');
-                
+
                 // Clear the ping interval
                 if (pingIntervalRef.current) {
                     clearInterval(pingIntervalRef.current);
                     pingIntervalRef.current = null;
                 }
-                
+
                 // Only attempt reconnects for unexpected disconnects
                 if (event.code !== 1000) { // 1000 is normal closure
                     scheduleReconnect();
@@ -103,18 +103,18 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
 
                 try {
                     const message = JSON.parse(event.data);
-                    const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
+                    const tasks = JSON.parse(localStorage.getItem("tasks") ?? "[]") as Item[];
 
                     if (message.type === 'task_created') {
-                        const exists = todos.some(todo => todo.id === message.data.id);
+                        const exists = tasks.some(todo => todo.id === message.data.id);
                         if (exists) {
                             console.warn('Received task_created for existing task:', message.data.id);
                         }
 
                         // Handle both with and without parent_id
                         const newTask = message.data;
-                        todos.push(newTask);
-                        localStorage.setItem("todos", JSON.stringify(todos));
+                        tasks.push(newTask);
+                        localStorage.setItem("tasks", JSON.stringify(tasks));
                         console.log('Task created with ID:', newTask.id,
                             newTask.parent_id ? `as a subtask of ${newTask.parent_id}` : 'as a top-level task');
                     } else if (message.type === 'task_updated') {
@@ -125,27 +125,27 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                             return;
                         }
 
-                        const taskExists = todos.some(todo => todo.id === taskId);
+                        const taskExists = tasks.some(todo => todo.id === taskId);
 
                         if (!taskExists) {
                             console.warn(`Received ${message.type} for unknown task:`, taskId);
                         }
 
-                        const updatedTodos = todos.map(todo => {
+                        const updatedTasks = tasks.map(todo => {
                             if (todo.id === taskId) {
                                 return { ...todo, ...message.data };
                             }
                             return todo;
                         });
 
-                        localStorage.setItem("todos", JSON.stringify(updatedTodos));
-                        console.log('Updated todos saved to localStorage');
+                        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+                        console.log('Updated tasks saved to localStorage');
                     } else {
                         console.log('Unknown message type:', message.type);
                     }
 
-                    // Invalidate the todos query to trigger a re-fetch
-                    queryClient.invalidateQueries({ queryKey: ['todos'] });
+                    // Invalidate the tasks query to trigger a re-fetch
+                    queryClient.invalidateQueries({ queryKey: ['tasks'] });
                 } catch (error) {
                     console.error('Error processing WebSocket message:', error);
                 }

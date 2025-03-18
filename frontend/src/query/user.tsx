@@ -25,32 +25,32 @@ export function useLogin() {
         onSuccess: (result: User) => {
             queryClient.invalidateQueries({ queryKey: ['user'] });
             localStorage.setItem('user', JSON.stringify(result));
-            
-            // Check if this is the first login (todos not yet fetched)
-            const hasFetchedTodos = localStorage.getItem('hasFetchedTodos') === 'true';
-            
-            if (!hasFetchedTodos) {
-                console.log('First login - fetching todos from server');
-                
+
+            // Check if this is the first login (tasks not yet fetched)
+            const hasFetchedTasks = localStorage.getItem('hasFetchedTasks') === 'true';
+
+            if (!hasFetchedTasks) {
+                console.log('First login - fetching tasks from server');
+
                 // Pre-fetch tasks only on first login
                 queryClient.prefetchQuery({
-                    queryKey: ['todos'],
+                    queryKey: ['tasks'],
                     queryFn: async () => {
                         try {
-                            const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
+                            const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/tasks`);
                             if (!response.ok) {
                                 throw new Error('Failed to fetch tasks');
                             }
-                            const todos = await response.json();
-                            
+                            const tasks = await response.json();
+
                             // Store in localStorage as backup
-                            localStorage.setItem('todos', JSON.stringify(todos));
-                            
-                            // Set the flag indicating we've fetched todos at least once
-                            localStorage.setItem('hasFetchedTodos', 'true');
-                            
-                            console.log('Initial todos fetch complete and saved');
-                            return todos;
+                            localStorage.setItem('tasks', JSON.stringify(tasks));
+
+                            // Set the flag indicating we've fetched tasks at least once
+                            localStorage.setItem('hasFetchedTasks', 'true');
+
+                            console.log('Initial tasks fetch complete and saved');
+                            return tasks;
                         } catch (error) {
                             console.error('Error pre-fetching tasks:', error);
                             return [];
@@ -58,7 +58,7 @@ export function useLogin() {
                     }
                 });
             } else {
-                console.log('Subsequent login - not fetching todos from server');
+                console.log('Subsequent login - not fetching tasks from server');
             }
         },
     })
@@ -86,7 +86,7 @@ async function postLogin(body: { username: string }) {
 
 async function fetchUserById(userId: string | number | undefined) {
     if (!userId) return null;
-    
+
     return fetch(`${env.NEXT_PUBLIC_API_URL}/user/${userId}`)
         .then((res) => {
             if (!res.ok) {

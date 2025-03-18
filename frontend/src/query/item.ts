@@ -14,45 +14,45 @@ export type Item = {
 
 export function useItems() {
     return useQuery({
-        queryKey: ['todos'],
+        queryKey: ['tasks'],
         queryFn: async () => {
-            const hasFetchedTodos = localStorage.getItem('hasFetchedTodos') === 'true';
-            const todosString = localStorage.getItem('todos');
-            
-            // If we've already fetched todos and have them in localStorage, use that
-            if (hasFetchedTodos && todosString) {
-                console.log('Using cached todos from localStorage');
-                return JSON.parse(todosString) as Item[];
+            const hasFetchedTasks = localStorage.getItem('hasFetchedTasks') === 'true';
+            const tasksString = localStorage.getItem('tasks');
+
+            // If we've already fetched tasks and have them in localStorage, use that
+            if (hasFetchedTasks && tasksString) {
+                console.log('Using cached tasks from localStorage');
+                return JSON.parse(tasksString) as Item[];
             }
-            
+
             // Otherwise fetch from server (first login or explicit refresh)
             try {
-                console.log('Fetching todos from server');
-                const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/todos`);
+                console.log('Fetching tasks from server');
+                const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/tasks`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch tasks from server');
                 }
-                const serverTodos = await response.json() as Item[];
-                
+                const serverTasks = await response.json() as Item[];
+
                 // Store in localStorage for offline access
-                localStorage.setItem('todos', JSON.stringify(serverTodos));
-                
-                // Set the flag indicating we've fetched todos
-                localStorage.setItem('hasFetchedTodos', 'true');
-                
-                console.log('Fetched todos from server:', serverTodos);
-                return serverTodos;
+                localStorage.setItem('tasks', JSON.stringify(serverTasks));
+
+                // Set the flag indicating we've fetched tasks
+                localStorage.setItem('hasFetchedTasks', 'true');
+
+                console.log('Fetched tasks from server:', serverTasks);
+                return serverTasks;
             } catch (error) {
                 console.error('Error fetching from server, falling back to localStorage:', error);
-                
+
                 // If we have data in localStorage, use it as fallback
-                if (todosString) {
-                    console.log('Falling back to localStorage todos');
-                    return JSON.parse(todosString) as Item[];
+                if (tasksString) {
+                    console.log('Falling back to localStorage tasks');
+                    return JSON.parse(tasksString) as Item[];
                 }
-                
+
                 // Otherwise return empty array
-                console.log('No todos available, returning empty array');
+                console.log('No tasks available, returning empty array');
                 return [] as Item[];
             }
         },
@@ -69,7 +69,7 @@ export function useAddItem() {
     return useMutation({
         mutationFn: postItem(ws, user),
         onSuccess: () => {
-            client.invalidateQueries({ queryKey: ['todos'] });
+            client.invalidateQueries({ queryKey: ['tasks'] });
         },
     })
 }
@@ -80,8 +80,8 @@ export function useUpdateTask() {
     return useMutation({
         mutationFn: updateTask(ws, client),
         onSuccess: () => {
-            client.invalidateQueries({ queryKey: ['todos'] });
-            console.log('Invalidated todos query after task update');
+            client.invalidateQueries({ queryKey: ['tasks'] });
+            console.log('Invalidated tasks query after task update');
         },
     });
 }
@@ -92,8 +92,8 @@ export function useCompleteItem() {
     return useMutation({
         mutationFn: completeItem(ws, client),
         onSuccess: () => {
-            client.invalidateQueries({ queryKey: ['todos'] });
-            console.log('Invalidated todos query after completion');
+            client.invalidateQueries({ queryKey: ['tasks'] });
+            console.log('Invalidated tasks query after completion');
         },
     })
 }
@@ -121,17 +121,17 @@ function postItem(ws: EnhancedWebSocket, user: User) {
             data: item,
         }));
 
-        const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-        todos.push(item);
-        localStorage.setItem("todos", JSON.stringify(todos));
+        const tasks = JSON.parse(localStorage.getItem("tasks") ?? "[]") as Item[];
+        tasks.push(item);
+        localStorage.setItem("tasks", JSON.stringify(tasks));
     }
 }
 
 function updateTask(ws: EnhancedWebSocket, queryClient: ReturnType<typeof useQueryClient>) {
     return async ({ id, changes }: { id: string, changes: Partial<Item> }) => {
         console.log('Updating task:', id, 'with changes:', changes);
-        const todos = JSON.parse(localStorage.getItem("todos") ?? "[]") as Item[];
-        const item = todos.find(todo => todo.id === id);
+        const tasks = JSON.parse(localStorage.getItem("tasks") ?? "[]") as Item[];
+        const item = tasks.find(todo => todo.id === id);
 
         if (!item) {
             console.error('Cannot update item, not found in localStorage:', id);
@@ -146,15 +146,15 @@ function updateTask(ws: EnhancedWebSocket, queryClient: ReturnType<typeof useQue
         }));
         console.log('Sent task_updated message with data:', updatedItem);
 
-        const updatedTodos = todos.map(todo =>
+        const updatedTasks = tasks.map(todo =>
             todo.id === id ? updatedItem : todo
         );
-        localStorage.setItem("todos", JSON.stringify(updatedTodos));
-        console.log('Updated todos in localStorage:', updatedTodos);
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
+        console.log('Updated tasks in localStorage:', updatedTasks);
 
         // Explicitly invalidate the query to trigger a re-fetch
-        queryClient.invalidateQueries({ queryKey: ['todos'] });
-        console.log('Invalidated todos query from updateTask function');
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        console.log('Invalidated tasks query from updateTask function');
     }
 }
 
@@ -183,16 +183,16 @@ export type ItemWithChildren = Item & { children: ItemWithChildren[] };
 export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
     const itemMap = new Map<string, ItemWithChildren>();
     const rootItems: ItemWithChildren[] = [];
-    
+
     // First pass: Create a map of all items with empty children arrays
     items.forEach(item => {
         itemMap.set(item.id, { ...item, children: [] });
     });
-    
+
     // Second pass: Organize items into tree structure
     items.forEach(item => {
         const enhancedItem = itemMap.get(item.id)!;
-        
+
         if (item.parent_id && itemMap.has(item.parent_id)) {
             // This is a child item, add it to its parent's children
             const parent = itemMap.get(item.parent_id)!;
@@ -202,6 +202,6 @@ export function organizeItemsIntoTree(items: Item[]): ItemWithChildren[] {
             rootItems.push(enhancedItem);
         }
     });
-    
+
     return rootItems;
 }
