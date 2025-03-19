@@ -29,12 +29,14 @@ type Router struct {
 }
 
 func NewRouter(db *sqlx.DB) *Router {
+	taskRepo := storage.NewTaskRepository(db)
+
 	return &Router{
 		db:           db,
 		ws:           ws.NewServer(db),
-		list:         tasks.NewList(db),
+		list:         tasks.NewList(db, taskRepo),
 		upsertUser:   users.NewFindOrCreate(db),
-		storeTask:    tasks.NewStore(db, storage.NewTaskRepository(db), storage.NewUserRepository(db)),
+		storeTask:    tasks.NewStore(db, taskRepo, storage.NewUserRepository(db)),
 		userFindByID: users.NewFindById(db),
 	}
 }

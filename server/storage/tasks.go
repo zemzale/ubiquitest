@@ -55,3 +55,45 @@ func (s *TaksRepository) CheckIfParentExists(parentID string) error {
 
 	return nil
 }
+
+func (s *TaksRepository) List() ([]*Task, error) {
+	const query = `
+		SELECT 
+			tasks.id, 
+			tasks.title, 
+			tasks.created_by, 
+			tasks.parent_id, 
+			tasks.completed, 
+			users.username 
+		FROM tasks 
+		LEFT JOIN users ON users.id = tasks.created_by
+	`
+	rows, err := s.db.Queryx(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
+	}
+	defer rows.Close()
+
+	tasks := make([]*Task, 0)
+	for rows.Next() {
+		var id string
+		var title string
+		var createdBy uint
+		var parentID sql.Null[string]
+		var completed bool
+		var username string
+		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed, &username); err != nil {
+			return nil, fmt.Errorf("failed to scan tasks: %w", err)
+		}
+
+		tasks = append(tasks, &Task{
+			ID:        id,
+			Title:     title,
+			CreatedBy: createdBy,
+			Completed: completed,
+			ParentID:  parentID,
+		})
+	}
+
+	return tasks, nil
+}
