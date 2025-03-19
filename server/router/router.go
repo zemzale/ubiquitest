@@ -32,14 +32,17 @@ type Router struct {
 func NewRouter(db *sqlx.DB, httpPort string) *Router {
 	taskRepo := storage.NewTaskRepository(db)
 	taskStore := tasks.NewStore(taskRepo, storage.NewUserRepository(db))
+	taskList := tasks.NewList(db, taskRepo)
+	upsertUser := users.NewFindOrCreate(db)
+	userFindByID := users.NewFindById(db)
 
 	return &Router{
 		db:           db,
 		ws:           ws.NewServer(db, taskStore, tasks.NewUpdate(db)),
-		list:         tasks.NewList(db, taskRepo),
-		upsertUser:   users.NewFindOrCreate(db),
+		list:         taskList,
+		upsertUser:   upsertUser,
 		storeTask:    taskStore,
-		userFindByID: users.NewFindById(db),
+		userFindByID: userFindByID,
 		mux:          chi.NewRouter(),
 
 		httpPort: httpPort,
