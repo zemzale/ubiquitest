@@ -2,9 +2,10 @@
 
 set -e 
 
-http http://localhost:9999/todos << EOF
+http http://localhost:9999/tasks << EOF
 {
-  "id": "2a25bb8c-dc2e-47e9-b07e-156a3ef3cf47",
-  "title": "Buy an ubiquti router"
+  "id": "2a25bb8c-dc2e-47e9-b07e-156a3ef3cf40",
+  "title": "Buy an ubiquti router",
+  "created_by": 5
 }
 EOF
