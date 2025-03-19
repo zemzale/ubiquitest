@@ -11,14 +11,12 @@ import (
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
-	"github.com/zemzale/ubiquitest/storage"
 	"github.com/zemzale/ubiquitest/ws"
 )
 
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
 type Router struct {
-	db           *sqlx.DB
 	ws           *ws.Server
 	list         *tasks.List
 	upsertUser   *users.FindOrCreate
@@ -29,14 +27,16 @@ type Router struct {
 	mux      *chi.Mux
 }
 
-func NewRouter(db *sqlx.DB, httpPort string, taskStore *tasks.Store) *Router {
-	taskRepo := storage.NewTaskRepository(db)
-	taskList := tasks.NewList(db, taskRepo)
+func NewRouter(
+	db *sqlx.DB,
+	httpPort string,
+	taskStore *tasks.Store,
+	taskList *tasks.List,
+) *Router {
 	upsertUser := users.NewFindOrCreate(db)
 	userFindByID := users.NewFindById(db)
 
 	return &Router{
-		db:           db,
 		ws:           ws.NewServer(db, taskStore, tasks.NewUpdate(db)),
 		list:         taskList,
 		upsertUser:   upsertUser,

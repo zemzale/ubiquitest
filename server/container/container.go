@@ -43,7 +43,13 @@ func Load() {
 		if err != nil {
 			return nil, err
 		}
-		return router.NewRouter(db, cfg.HTTP.Port, taskStore), nil
+
+		taskList, err := do.Invoke[*tasks.List](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {
@@ -54,5 +60,28 @@ func Load() {
 
 		taskRepo := storage.NewTaskRepository(db)
 		return tasks.NewStore(taskRepo, storage.NewUserRepository(db)), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.List, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		taskRepo, err := do.Invoke[*storage.TaksRepository](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks.NewList(db, taskRepo), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*storage.TaksRepository, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return storage.NewTaskRepository(db), nil
 	})
 }
