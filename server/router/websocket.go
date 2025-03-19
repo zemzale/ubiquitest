@@ -30,5 +30,5 @@ func (r *Router) WsTasks(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	r.ws.TakeConnection(username, conn)
+	r.websocketServer.TakeConnection(username, conn)
 }

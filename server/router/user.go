@@ -10,7 +10,7 @@ import (
 func (r *Router) PostLogin(
 	ctx context.Context, request oapi.PostLoginRequestObject,
 ) (oapi.PostLoginResponseObject, error) {
-	user, err := r.upsertUser.Run(request.Body.Username)
+	user, err := r.usersUpsert.Run(request.Body.Username)
 	if err != nil {
 		return oapi.PostLogin500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
@@ -19,7 +19,7 @@ func (r *Router) PostLogin(
 }
 
 func (r *Router) GetUserId(ctx context.Context, request oapi.GetUserIdRequestObject) (oapi.GetUserIdResponseObject, error) {
-	user, err := r.userFindByID.Run(request.Id)
+	user, err := r.usersFindByID.Run(request.Id)
 	if err != nil {
 		return oapi.GetUserId500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}

@@ -16,11 +16,11 @@ import (
 var _ oapi.StrictServerInterface = (*Router)(nil)
 
 type Router struct {
-	ws           *ws.Server
-	list         *tasks.List
-	upsertUser   *users.FindOrCreate
-	storeTask    *tasks.Store
-	userFindByID *users.FindByID
+	websocketServer *ws.Server
+	taskList        *tasks.List
+	tasksStore      *tasks.Store
+	usersFindByID   *users.FindByID
+	usersUpsert     *users.FindOrCreate
 
 	httpPort string
 	mux      *chi.Mux
@@ -35,12 +35,12 @@ func NewRouter(
 	wss *ws.Server,
 ) *Router {
 	return &Router{
-		ws:           wss,
-		list:         taskList,
-		upsertUser:   upsertUser,
-		storeTask:    taskStore,
-		userFindByID: userFindByID,
-		mux:          chi.NewRouter(),
+		websocketServer: wss,
+		taskList:        taskList,
+		usersUpsert:     upsertUser,
+		tasksStore:      taskStore,
+		usersFindByID:   userFindByID,
+		mux:             chi.NewRouter(),
 
 		httpPort: httpPort,
 	}

@@ -17,7 +17,7 @@ func (r *Router) PostTasks(
 		parnetID = *request.Body.ParentId
 	}
 
-	err := r.storeTask.Run(tasks.Task{
+	err := r.tasksStore.Run(tasks.Task{
 		ID:        request.Body.Id,
 		Title:     request.Body.Title,
 		CreatedBy: request.Body.CreatedBy,
@@ -34,7 +34,7 @@ func (r *Router) PostTasks(
 func (r *Router) GetTasks(
 	ctx context.Context, request oapi.GetTasksRequestObject,
 ) (oapi.GetTasksResponseObject, error) {
-	taskList, err := r.list.Run()
+	taskList, err := r.taskList.Run()
 	if err != nil {
 		return oapi.GetTasks500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
 	}
