@@ -29,9 +29,8 @@ type Router struct {
 	mux      *chi.Mux
 }
 
-func NewRouter(db *sqlx.DB, httpPort string) *Router {
+func NewRouter(db *sqlx.DB, httpPort string, taskStore *tasks.Store) *Router {
 	taskRepo := storage.NewTaskRepository(db)
-	taskStore := tasks.NewStore(taskRepo, storage.NewUserRepository(db))
 	taskList := tasks.NewList(db, taskRepo)
 	upsertUser := users.NewFindOrCreate(db)
 	userFindByID := users.NewFindById(db)

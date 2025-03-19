@@ -4,7 +4,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/samber/do"
 	"github.com/zemzale/ubiquitest/config"
+	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/router"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
 func Load() {
@@ -37,6 +39,20 @@ func Load() {
 			return nil, err
 		}
 
-		return router.NewRouter(db, cfg.HTTP.Port), nil
+		taskStore, err := do.Invoke[*tasks.Store](i)
+		if err != nil {
+			return nil, err
+		}
+		return router.NewRouter(db, cfg.HTTP.Port, taskStore), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		taskRepo := storage.NewTaskRepository(db)
+		return tasks.NewStore(taskRepo, storage.NewUserRepository(db)), nil
 	})
 }
