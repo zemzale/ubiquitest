@@ -4,23 +4,19 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/storage"
 )
 
 type Store struct {
-	db *sqlx.DB
-	// TOOD Fix the name typo and name
-	insertTask *storage.TaksRepository
-	userRepo   *storage.UserRepository
+	taskRepo *storage.TaksRepository
+	userRepo *storage.UserRepository
 }
 
-func NewStore(db *sqlx.DB, insertTask *storage.TaksRepository, userRepo *storage.UserRepository) *Store {
-	return &Store{db: db, insertTask: insertTask, userRepo: userRepo}
+func NewStore(insertTask *storage.TaksRepository, userRepo *storage.UserRepository) *Store {
+	return &Store{taskRepo: insertTask, userRepo: userRepo}
 }
 
 func (s *Store) Run(task Task) error {
-	// TODO: Use storage for checking user stuff
 	userExists, err := s.userRepo.Exists(task.CreatedBy)
 	if err != nil {
 		return err
@@ -35,7 +31,7 @@ func (s *Store) Run(task Task) error {
 		return fmt.Errorf("failed to check if parent exists: %w", err)
 	}
 
-	if err := s.insertTask.Create(mapNewTaskToDB(task)); err != nil {
+	if err := s.taskRepo.Create(mapNewTaskToDB(task)); err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
 	}
 
@@ -47,7 +43,7 @@ func (s *Store) checkIfParentExists(parentID uuid.UUID) error {
 		return nil
 	}
 
-	err := s.insertTask.CheckIfParentExists(parentID.String())
+	err := s.taskRepo.CheckIfParentExists(parentID.String())
 	if err != nil {
 		return fmt.Errorf("failed to get parent id: %w", err)
 	}

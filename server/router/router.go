@@ -36,7 +36,7 @@ func NewRouter(db *sqlx.DB) *Router {
 		ws:           ws.NewServer(db),
 		list:         tasks.NewList(db, taskRepo),
 		upsertUser:   users.NewFindOrCreate(db),
-		storeTask:    tasks.NewStore(db, taskRepo, storage.NewUserRepository(db)),
+		storeTask:    tasks.NewStore(taskRepo, storage.NewUserRepository(db)),
 		userFindByID: users.NewFindById(db),
 	}
 }

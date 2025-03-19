@@ -32,7 +32,7 @@ func NewServer(db *sqlx.DB) *Server {
 
 		db: db,
 
-		storeTask:  tasks.NewStore(db, storage.NewTaskRepository(db), storage.NewUserRepository(db)),
+		storeTask:  tasks.NewStore(storage.NewTaskRepository(db), storage.NewUserRepository(db)),
 		updateTask: tasks.NewUpdate(db),
 	}
 }
