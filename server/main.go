@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/samber/do"
+	"github.com/zemzale/ubiquitest/container"
 	"github.com/zemzale/ubiquitest/router"
 	"github.com/zemzale/ubiquitest/storage"
 )
@@ -17,7 +20,9 @@ func main() {
 }
 
 func run() error {
-	db, err := storage.NewDB()
+	container.Load()
+
+	db, err := do.Invoke[*sqlx.DB](nil)
 	if err != nil {
 		return err
 	}
