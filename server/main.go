@@ -31,7 +31,12 @@ func run() error {
 		return err
 	}
 
-	if err := router.Run(db); err != nil {
+	r, err := do.Invoke[*router.Router](nil)
+	if err != nil {
+		return err
+	}
+
+	if err := r.Run(); err != nil {
 		return err
 	}
 

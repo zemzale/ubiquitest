@@ -26,6 +26,8 @@ type Router struct {
 	upsertUser   *users.FindOrCreate
 	storeTask    *tasks.Store
 	userFindByID *users.FindByID
+
+	mux *chi.Mux
 }
 
 func NewRouter(db *sqlx.DB) *Router {
@@ -38,36 +40,33 @@ func NewRouter(db *sqlx.DB) *Router {
 		upsertUser:   users.NewFindOrCreate(db),
 		storeTask:    tasks.NewStore(taskRepo, storage.NewUserRepository(db)),
 		userFindByID: users.NewFindById(db),
+		mux:          chi.NewRouter(),
 	}
 }
 
-func Run(db *sqlx.DB) error {
-	mux := chi.NewRouter()
-	r := NewRouter(db)
-
-	setupRoutes(r, mux)
-	printDebugRoutes(mux)
-
+func (r *Router) Run() error {
+	r.setupRoutes()
+	r.printDebugRoutes()
 	port := cmp.Or(os.Getenv("HTTP_PORT"), ":8080")
-	if err := http.ListenAndServe(port, mux); err != nil {
+	if err := http.ListenAndServe(port, r.mux); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func setupRoutes(r *Router, mux *chi.Mux) {
-	mux.Use(middleware.Logger)
-	mux.Use(cors.New(cors.Options{
+func (r *Router) setupRoutes() {
+	r.mux.Use(middleware.Logger)
+	r.mux.Use(cors.New(cors.Options{
 		AllowedOrigins: []string{"https://ubiquitest.netlify.app", "http://localhost:3000"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}).Handler)
-	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), mux)
-	mux.HandleFunc("/ws/tasks", r.WsTasks)
+	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), r.mux)
+	r.mux.HandleFunc("/ws/tasks", r.WsTasks)
 }
 
-func printDebugRoutes(mux *chi.Mux) {
-	for _, route := range mux.Routes() {
+func (r *Router) printDebugRoutes() {
+	for _, route := range r.mux.Routes() {
 		fmt.Println(route.Pattern)
 	}
 }
