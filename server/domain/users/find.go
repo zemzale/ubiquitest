@@ -1,29 +1,22 @@
 package users
 
 import (
-	"fmt"
-
-	"github.com/jmoiron/sqlx"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
 type FindByID struct {
-	db *sqlx.DB
+	userRepo *storage.UserRepository
 }
 
-func NewFindById(db *sqlx.DB) *FindByID {
-	return &FindByID{db: db}
+func NewFindById(userRepo *storage.UserRepository) *FindByID {
+	return &FindByID{userRepo: userRepo}
 }
 
 func (r *FindByID) Run(userID uint) (User, error) {
-	// TODO Move this to DB layer
-	var user struct {
-		Id       uint   `db:"id"`
-		Username string `db:"username"`
-	}
-	err := r.db.Get(&user, "SELECT * FROM users where id=?", userID)
+	userRecord, err := r.userRepo.FindByID(userID)
 	if err != nil {
-		return User{}, fmt.Errorf("failed to get user with id %d: %w", userID, err)
+		return User{}, err
 	}
 
-	return User{ID: user.Id, Username: user.Username}, nil
+	return User{ID: userRecord.ID, Username: userRecord.Username}, nil
 }

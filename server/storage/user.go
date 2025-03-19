@@ -6,6 +6,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type User struct {
+	ID       uint   `db:"id"`
+	Username string `db:"username"`
+}
+
 type UserRepository struct {
 	db *sqlx.DB
 }
@@ -22,4 +27,14 @@ func (r *UserRepository) Exists(userID uint) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r *UserRepository) FindByID(userID uint) (User, error) {
+	var user User
+	err := r.db.Get(&user, "SELECT * FROM users where id=?", userID)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to get user with id %d: %w", userID, err)
+	}
+
+	return user, nil
 }

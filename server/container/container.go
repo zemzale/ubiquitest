@@ -107,12 +107,12 @@ func Load() {
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*users.FindByID, error) {
-		db, err := do.Invoke[*sqlx.DB](i)
+		userRepo, err := do.Invoke[*storage.UserRepository](i)
 		if err != nil {
 			return nil, err
 		}
 
-		return users.NewFindById(db), nil
+		return users.NewFindById(userRepo), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*ws.Server, error) {
@@ -140,5 +140,14 @@ func Load() {
 		}
 
 		return tasks.NewUpdate(db), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*storage.UserRepository, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return storage.NewUserRepository(db), nil
 	})
 }
