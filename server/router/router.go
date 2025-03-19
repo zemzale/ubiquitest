@@ -32,8 +32,8 @@ func NewRouter(
 	httpPort string,
 	taskStore *tasks.Store,
 	taskList *tasks.List,
+	upsertUser *users.FindOrCreate,
 ) *Router {
-	upsertUser := users.NewFindOrCreate(db)
 	userFindByID := users.NewFindById(db)
 
 	return &Router{

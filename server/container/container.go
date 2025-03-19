@@ -5,6 +5,7 @@ import (
 	"github.com/samber/do"
 	"github.com/zemzale/ubiquitest/config"
 	"github.com/zemzale/ubiquitest/domain/tasks"
+	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/router"
 	"github.com/zemzale/ubiquitest/storage"
 )
@@ -49,7 +50,12 @@ func Load() {
 			return nil, err
 		}
 
-		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList), nil
+		upsertUser, err := do.Invoke[*users.FindOrCreate](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList, upsertUser), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {
@@ -83,5 +89,14 @@ func Load() {
 		}
 
 		return storage.NewTaskRepository(db), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*users.FindOrCreate, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return users.NewFindOrCreate(db), nil
 	})
 }
