@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
-	"github.com/zemzale/ubiquitest/storage"
 )
 
 type connection struct {
@@ -26,14 +25,14 @@ type Server struct {
 	db         *sqlx.DB
 }
 
-func NewServer(db *sqlx.DB) *Server {
+func NewServer(db *sqlx.DB, storeTask *tasks.Store, updateTask *tasks.Update) *Server {
 	return &Server{
 		connections: make(map[string]connection), rwmutex: &sync.RWMutex{},
 
 		db: db,
 
-		storeTask:  tasks.NewStore(storage.NewTaskRepository(db), storage.NewUserRepository(db)),
-		updateTask: tasks.NewUpdate(db),
+		storeTask:  storeTask,
+		updateTask: updateTask,
 	}
 }
 
