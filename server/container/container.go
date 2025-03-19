@@ -8,6 +8,7 @@ import (
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/router"
 	"github.com/zemzale/ubiquitest/storage"
+	"github.com/zemzale/ubiquitest/ws"
 )
 
 func Load() {
@@ -30,11 +31,6 @@ func Load() {
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*router.Router, error) {
-		db, err := do.Invoke[*sqlx.DB](i)
-		if err != nil {
-			return nil, err
-		}
-
 		cfg, err := do.Invoke[*config.Config](i)
 		if err != nil {
 			return nil, err
@@ -60,7 +56,12 @@ func Load() {
 			return nil, err
 		}
 
-		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList, upsertUser, userFindByID), nil
+		wss, err := do.Invoke[*ws.Server](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return router.NewRouter(cfg.HTTP.Port, taskStore, taskList, upsertUser, userFindByID, wss), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {
@@ -112,5 +113,32 @@ func Load() {
 		}
 
 		return users.NewFindById(db), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*ws.Server, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+		storeTask, err := do.Invoke[*tasks.Store](i)
+		if err != nil {
+			return nil, err
+		}
+
+		updateTask, err := do.Invoke[*tasks.Update](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return ws.NewServer(db, storeTask, updateTask), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.Update, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks.NewUpdate(db), nil
 	})
 }

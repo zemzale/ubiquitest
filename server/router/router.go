@@ -7,7 +7,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
@@ -28,15 +27,15 @@ type Router struct {
 }
 
 func NewRouter(
-	db *sqlx.DB,
 	httpPort string,
 	taskStore *tasks.Store,
 	taskList *tasks.List,
 	upsertUser *users.FindOrCreate,
 	userFindByID *users.FindByID,
+	wss *ws.Server,
 ) *Router {
 	return &Router{
-		ws:           ws.NewServer(db, taskStore, tasks.NewUpdate(db)),
+		ws:           wss,
 		list:         taskList,
 		upsertUser:   upsertUser,
 		storeTask:    taskStore,
