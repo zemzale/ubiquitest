@@ -33,9 +33,8 @@ func NewRouter(
 	taskStore *tasks.Store,
 	taskList *tasks.List,
 	upsertUser *users.FindOrCreate,
+	userFindByID *users.FindByID,
 ) *Router {
-	userFindByID := users.NewFindById(db)
-
 	return &Router{
 		ws:           ws.NewServer(db, taskStore, tasks.NewUpdate(db)),
 		list:         taskList,

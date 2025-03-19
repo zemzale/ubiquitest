@@ -55,7 +55,12 @@ func Load() {
 			return nil, err
 		}
 
-		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList, upsertUser), nil
+		userFindByID, err := do.Invoke[*users.FindByID](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return router.NewRouter(db, cfg.HTTP.Port, taskStore, taskList, upsertUser, userFindByID), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {
@@ -98,5 +103,14 @@ func Load() {
 		}
 
 		return users.NewFindOrCreate(db), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*users.FindByID, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return users.NewFindById(db), nil
 	})
 }
