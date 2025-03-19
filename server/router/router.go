@@ -1,10 +1,8 @@
 package router
 
 import (
-	"cmp"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -27,10 +25,11 @@ type Router struct {
 	storeTask    *tasks.Store
 	userFindByID *users.FindByID
 
-	mux *chi.Mux
+	httpPort string
+	mux      *chi.Mux
 }
 
-func NewRouter(db *sqlx.DB) *Router {
+func NewRouter(db *sqlx.DB, httpPort string) *Router {
 	taskRepo := storage.NewTaskRepository(db)
 
 	return &Router{
@@ -41,14 +40,16 @@ func NewRouter(db *sqlx.DB) *Router {
 		storeTask:    tasks.NewStore(taskRepo, storage.NewUserRepository(db)),
 		userFindByID: users.NewFindById(db),
 		mux:          chi.NewRouter(),
+
+		httpPort: httpPort,
 	}
 }
 
 func (r *Router) Run() error {
 	r.setupRoutes()
 	r.printDebugRoutes()
-	port := cmp.Or(os.Getenv("HTTP_PORT"), ":8080")
-	if err := http.ListenAndServe(port, r.mux); err != nil {
+
+	if err := http.ListenAndServe(r.httpPort, r.mux); err != nil {
 		return err
 	}
 
