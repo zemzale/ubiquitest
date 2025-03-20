@@ -9,30 +9,29 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
+	"github.com/zemzale/ubiquitest/domain/users"
+	"github.com/zemzale/ubiquitest/storage"
 )
 
-type connection struct {
-	conn *websocket.Conn
-	user string
-}
-
 type Server struct {
-	connections map[string]connection
+	connections map[string]*Client
 	rwmutex     *sync.RWMutex
 
 	storeTask  *tasks.Store
 	updateTask *tasks.Update
+	userFind   *users.FindByUsername
 	db         *sqlx.DB
 }
 
 func NewServer(db *sqlx.DB, storeTask *tasks.Store, updateTask *tasks.Update) *Server {
 	return &Server{
-		connections: make(map[string]connection), rwmutex: &sync.RWMutex{},
+		connections: make(map[string]*Client), rwmutex: &sync.RWMutex{},
 
 		db: db,
 
 		storeTask:  storeTask,
 		updateTask: updateTask,
+		userFind:   users.NewFindByUsername(storage.NewUserRepository(db)),
 	}
 }
 
@@ -45,7 +44,14 @@ func (s *Server) Close() {
 func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	s.rwmutex.Lock()
 	defer s.rwmutex.Unlock()
-	c := connection{conn: conn, user: username}
+
+	user, err := s.userFind.Run(username)
+	if err != nil {
+		log.Println("failed to find user ", err)
+		return
+	}
+
+	c := NewClient(conn, user)
 
 	oldConnection, found := s.connections[username]
 	if found {
@@ -55,7 +61,7 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	go s.handleConnection(c)
 }
 
-func (s *Server) handleConnection(c connection) {
+func (s *Server) handleConnection(c *Client) {
 	for {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -153,7 +159,7 @@ func (s *Server) handleConnection(c connection) {
 	}
 }
 
-func (s *Server) broadcast(data any, broadcaster connection) {
+func (s *Server) broadcast(data any, broadcaster *Client) {
 	for _, conn := range s.connections {
 		if conn.user == broadcaster.user {
 			continue
@@ -165,7 +171,7 @@ func (s *Server) broadcast(data any, broadcaster connection) {
 	}
 }
 
-func (s *Server) reply(c connection, replyEventType EventType, replyEventData any) error {
+func (s *Server) reply(c *Client, replyEventType EventType, replyEventData any) error {
 	switch replyEventType {
 	case EventTypeTaskStoreFailure:
 		e, ok := replyEventData.(EventTaskStoreFailure)
@@ -185,9 +191,9 @@ func (s *Server) reply(c connection, replyEventType EventType, replyEventData an
 	}
 }
 
-func (s *Server) removeConnection(c connection) {
+func (s *Server) removeConnection(c *Client) {
 	s.rwmutex.Lock()
 	defer s.rwmutex.Unlock()
 
-	delete(s.connections, c.user)
+	delete(s.connections, c.user.Username)
 }
