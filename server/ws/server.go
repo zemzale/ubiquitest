@@ -8,10 +8,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/jmoiron/sqlx"
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
-	"github.com/zemzale/ubiquitest/storage"
 )
 
 type Server struct {
@@ -24,7 +22,6 @@ type Server struct {
 	storeTask  *tasks.Store
 	updateTask *tasks.Update
 	userFind   *users.FindByUsername
-	db         *sqlx.DB
 }
 
 type clientChange struct {
@@ -39,16 +36,14 @@ const (
 	remove
 )
 
-func NewServer(db *sqlx.DB, storeTask *tasks.Store, updateTask *tasks.Update) *Server {
+func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, findUserByUsername *users.FindByUsername) *Server {
 	return &Server{
 		connections:      make(map[string]*Client),
 		clientChangeChan: make(chan *clientChange),
 
-		db: db,
-
 		storeTask:  storeTask,
 		updateTask: updateTask,
-		userFind:   users.NewFindByUsername(storage.NewUserRepository(db)),
+		userFind:   findUserByUsername,
 	}
 }
 
@@ -188,15 +183,7 @@ func (s *Server) handleConnection(c *Client) {
 				Completed: taskUpdated.Completed,
 			}
 
-			// TODO: Change to have channles based on user id instead of username
-
-			var userID uint
-			if err := s.db.Get(&userID, "SELECT id FROM users WHERE username = ?", c.user); err != nil {
-				log.Println("failed to get user id ", err)
-				continue
-			}
-
-			if err := s.updateTask.Run(task, userID); err != nil {
+			if err := s.updateTask.Run(task, c.user.ID); err != nil {
 				log.Println("failed to update task ", err)
 				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 					log.Println("failed to reply with error ", replyErr)
@@ -219,7 +206,7 @@ func (s *Server) handleConnection(c *Client) {
 
 func (s *Server) broadcast(data any, broadcaster *Client) {
 	for _, conn := range s.connections {
-		if conn.user == broadcaster.user {
+		if conn.user.ID == broadcaster.user.ID {
 			continue
 		}
 		log.Printf("broadcasting to user '%#v' \n", conn.user)
