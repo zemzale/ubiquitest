@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
 	"github.com/zemzale/ubiquitest/ws"
+	"golang.org/x/sync/errgroup"
 )
 
 var _ oapi.StrictServerInterface = (*Router)(nil)
@@ -50,11 +52,18 @@ func (r *Router) Run() error {
 	r.setupRoutes()
 	r.printDebugRoutes()
 
-	if err := http.ListenAndServe(r.httpPort, r.mux); err != nil {
-		return err
-	}
+	errGroup, ctx := errgroup.WithContext(context.Background())
+	errGroup.Go(func() error {
+		r.websocketServer.Run(ctx)
 
-	return nil
+		return nil
+	})
+
+	errGroup.Go(func() error {
+		return http.ListenAndServe(r.httpPort, r.mux)
+	})
+
+	return errGroup.Wait()
 }
 
 func (r *Router) setupRoutes() {

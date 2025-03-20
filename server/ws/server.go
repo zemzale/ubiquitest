@@ -1,10 +1,11 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
@@ -15,7 +16,10 @@ import (
 
 type Server struct {
 	connections map[string]*Client
-	rwmutex     *sync.RWMutex
+
+	// We are using a single channel for client changes to avoid locking
+	// the map and also to avoid race conditions with register/unregister channels
+	clientChangeChan chan *clientChange
 
 	storeTask  *tasks.Store
 	updateTask *tasks.Update
@@ -23,9 +27,22 @@ type Server struct {
 	db         *sqlx.DB
 }
 
+type clientChange struct {
+	client *Client
+	action clientchangeAction
+}
+
+type clientchangeAction int
+
+const (
+	add clientchangeAction = iota
+	remove
+)
+
 func NewServer(db *sqlx.DB, storeTask *tasks.Store, updateTask *tasks.Update) *Server {
 	return &Server{
-		connections: make(map[string]*Client), rwmutex: &sync.RWMutex{},
+		connections:      make(map[string]*Client),
+		clientChangeChan: make(chan *clientChange),
 
 		db: db,
 
@@ -36,15 +53,58 @@ func NewServer(db *sqlx.DB, storeTask *tasks.Store, updateTask *tasks.Update) *S
 }
 
 func (s *Server) Close() {
+	close(s.clientChangeChan)
+
 	for _, conn := range s.connections {
 		conn.conn.Close()
 	}
 }
 
-func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
-	s.rwmutex.Lock()
-	defer s.rwmutex.Unlock()
+func (s *Server) Run(ctx context.Context) {
+	go s.handleClients(ctx)
+}
 
+func (s *Server) handleClients(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case client := <-s.clientChangeChan:
+			switch client.action {
+			case add:
+				s.registerClient(client.client)
+			case remove:
+				s.unregisterClient(client.client)
+			default:
+				log.Println("unknown client action ", client.action)
+			}
+		}
+	}
+}
+
+func (s *Server) registerClient(client *Client) {
+	log.Println("registering client ", client.user.Username)
+
+	if oldClient, ok := s.connections[client.user.Username]; ok {
+		oldClient.conn.Close()
+	}
+
+	s.connections[client.user.Username] = client
+
+	go s.handleConnection(client)
+}
+
+func (s *Server) unregisterClient(client *Client) {
+	log.Println("unregistering client ", client.user.Username)
+
+	if _, ok := s.connections[client.user.Username]; !ok {
+		return
+	}
+
+	delete(s.connections, client.user.Username)
+}
+
+func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	user, err := s.userFind.Run(username)
 	if err != nil {
 		log.Println("failed to find user ", err)
@@ -52,31 +112,29 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 	}
 
 	c := NewClient(conn, user)
+	s.clientChangeChan <- &clientChange{client: c, action: add}
 
-	oldConnection, found := s.connections[username]
-	if found {
-		oldConnection.conn.Close()
-	}
-	s.connections[username] = c
 	go s.handleConnection(c)
 }
 
 func (s *Server) handleConnection(c *Client) {
+	c.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+
 	for {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
-			log.Printf("failed to read message for user '%s' with error '%#v' \n", c.user, err)
-			s.removeConnection(c)
-			break
+			log.Printf("failed to read message for user '%s' with error '%#v' \n", c.user.Username, err)
+			s.clientChangeChan <- &clientChange{client: c, action: remove}
+			return
 		}
 		if messageType == websocket.CloseMessage {
-			log.Printf("received close for user '%s' \n", c.user)
-			s.removeConnection(c)
-			break
+			log.Printf("received close for user '%s' \n", c.user.Username)
+			s.clientChangeChan <- &clientChange{client: c, action: remove}
+			return
 		}
 
 		if messageType != websocket.TextMessage {
-			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user)
+			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user.Username)
 			continue
 		}
 
@@ -164,7 +222,7 @@ func (s *Server) broadcast(data any, broadcaster *Client) {
 		if conn.user == broadcaster.user {
 			continue
 		}
-		log.Printf("broadcasting to user '%s' \n", conn.user)
+		log.Printf("broadcasting to user '%#v' \n", conn.user)
 		if err := conn.conn.WriteJSON(data); err != nil {
 			log.Println(err)
 		}
@@ -189,11 +247,4 @@ func (s *Server) reply(c *Client, replyEventType EventType, replyEventData any) 
 	default:
 		return fmt.Errorf("unknown replyEventType %s", replyEventType)
 	}
-}
-
-func (s *Server) removeConnection(c *Client) {
-	s.rwmutex.Lock()
-	defer s.rwmutex.Unlock()
-
-	delete(s.connections, c.user.Username)
 }
