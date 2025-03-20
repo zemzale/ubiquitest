@@ -38,3 +38,13 @@ func (r *UserRepository) FindByID(userID uint) (User, error) {
 
 	return user, nil
 }
+
+func (r *UserRepository) FindByUsername(username string) (User, error) {
+	var user User
+	err := r.db.Get(&user, "SELECT * FROM users where username=?", username)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to get user with username %s: %w", username, err)
+	}
+
+	return user, nil
+}
