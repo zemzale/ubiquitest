@@ -50,8 +50,8 @@ func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, findUserByUsern
 func (s *Server) Close() {
 	close(s.clientChangeChan)
 
-	for _, conn := range s.connections {
-		conn.conn.Close()
+	for _, client := range s.connections {
+		client.Close()
 	}
 }
 
@@ -81,7 +81,7 @@ func (s *Server) registerClient(client *Client) {
 	log.Println("registering client ", client.user.Username)
 
 	if oldClient, ok := s.connections[client.user.Username]; ok {
-		oldClient.conn.Close()
+		oldClient.Close()
 	}
 
 	s.connections[client.user.Username] = client
