@@ -35,6 +35,9 @@ type Todo struct {
 	// Completed Whether the todo item is completed
 	Completed bool `json:"completed"`
 
+	// Cost The cost of the todo item
+	Cost *uint `json:"cost,omitempty"`
+
 	// CreatedBy The user id of the user who create the todo item
 	CreatedBy uint `json:"created_by"`
 

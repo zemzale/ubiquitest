@@ -156,6 +156,12 @@ components:
           format: uuid
           description: The ID of the parent todo item
           example: c0a0c2c7-a7b6-4e4c-b8a9-c3a4f9c9d0e1
+        cost:
+          type: number
+          x-go-type: uint
+          description: The cost of the todo item
+          example: 10
+          x-nullable: true
     LoginResponse:
       type: object
       required:

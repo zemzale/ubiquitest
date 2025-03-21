@@ -13,6 +13,7 @@ type Task struct {
 	CreatedBy uint
 	Completed bool
 	ParentID  uuid.UUID
+	Cost      uint
 }
 
 func mapNewTaskToDB(task Task) storage.Task {
@@ -27,5 +28,6 @@ func mapNewTaskToDB(task Task) storage.Task {
 		CreatedBy: task.CreatedBy,
 		Completed: task.Completed,
 		ParentID:  sql.Null[string]{V: parentID.String(), Valid: true},
+		Cost:      task.Cost,
 	}
 }

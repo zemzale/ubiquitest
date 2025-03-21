@@ -18,7 +18,8 @@ func CreateDB(db *sqlx.DB) error {
 			created_by INTEGER NOT NULL, 
 			completed BOOLEAN NOT NULL DEFAULT false,
 			completed_by INTEGER NULL,
-			parent_id TEXT NULL
+			parent_id TEXT NULL,
+			cost INTEGER NOT NULL DEFAULT 0
 		);
 	`)
 	if err != nil {

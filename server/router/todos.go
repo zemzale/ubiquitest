@@ -23,6 +23,7 @@ func (r *Router) PostTasks(
 		CreatedBy: request.Body.CreatedBy,
 		Completed: false,
 		ParentID:  parnetID,
+		Cost:      lo.FromPtr(request.Body.Cost),
 	})
 	if err != nil {
 		return oapi.PostTasks500JSONResponse{Error: lo.ToPtr(err.Error())}, nil
@@ -53,6 +54,7 @@ func (r *Router) GetTasks(
 
 					return &t.ParentID
 				}(),
+				Cost: lo.ToPtr(t.Cost),
 			}
 		}),
 	), nil

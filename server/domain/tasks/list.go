@@ -36,6 +36,7 @@ func (l *List) Run() ([]Task, error) {
 			CreatedBy: taskRecord.CreatedBy,
 			Completed: taskRecord.Completed,
 			ParentID:  parentID,
+			Cost:      taskRecord.Cost,
 		})
 	}
 

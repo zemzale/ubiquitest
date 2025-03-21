@@ -85,6 +85,8 @@ can retrospect on my prior progress.
 - [x] I as a user can add sub-tasks to my to-do items - so that I could make logical groups of
 tasks and see their overall progress.
 - [x] I as a user can make infinite nested levels of subtasks.
+- [x] I as a user can specify cost/price for a task or a subtask - so that I can track my
+expenses / project cost.
 
 
 # Notes

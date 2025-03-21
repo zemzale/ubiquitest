@@ -217,6 +217,11 @@ function TaskItem({
                                 {item.created_by && (
                                     <TaskCreator userId={item.created_by} isSubtask={isSubtask} />
                                 )}
+                                {item.cost !== 0 ?
+                                    <div className="mt-1 text-xs text-gray-500">
+                                        Cost: {item.cost}
+                                    </div> : null
+                                }
                                 {hasChildren && (
                                     <div className="mt-1 text-xs text-blue-500">
                                         {item.children.length} {item.children.length === 1 ? 'subtask' : 'subtasks'}
@@ -416,13 +421,16 @@ function AddItemModal({ onClose, parentId }: { onClose: () => void, parentId?: s
 
         const titleElement = form.elements.namedItem('title') as HTMLInputElement;
         const parentElement = form.elements.namedItem('parent_id') as HTMLSelectElement;
+        const costElement = form.elements.namedItem('cost') as HTMLInputElement;
 
         // Use either the provided parentId or the selected one from dropdown
         const selectedParentId = parentId || (parentElement?.value !== "none" ? parentElement?.value : undefined);
+        const selectedCost = (costElement?.value !== "" ? parseInt(costElement?.value) : undefined);
 
         const formData = {
             title: titleElement.value,
-            parent_id: selectedParentId
+            parent_id: selectedParentId,
+            cost: selectedCost,
         };
 
         mutation.mutate(formData);
@@ -476,6 +484,18 @@ function AddItemModal({ onClose, parentId }: { onClose: () => void, parentId?: s
                             placeholder="Enter task title"
                             required
                             autoFocus
+                        />
+                        <label
+                            className="block text-gray-700 text-sm font-bold mb-2"
+                            htmlFor="cost"
+                        >
+                            Cost (optional)
+                        </label>
+                        <input
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="cost"
+                            type="text"
+                            placeholder="Enter task cost"
                         />
                     </div>
 

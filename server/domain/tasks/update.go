@@ -20,8 +20,8 @@ func (u *Update) Run(task Task, userID uint) error {
 	}
 
 	result, err := u.db.Exec(
-		"UPDATE tasks SET title = ?, completed = ?, completed_by = ? WHERE id = ?",
-		task.Title, task.Completed, nil, task.ID.String(),
+		"UPDATE tasks SET title = ?, completed = ?, completed_by = ?, cost = ? WHERE id = ?",
+		task.Title, task.Completed, nil, task.ID.String(), task.Cost,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update task: %w", err)

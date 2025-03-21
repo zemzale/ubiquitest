@@ -10,6 +10,7 @@ export type Item = {
     completed?: boolean;
     created_by: number;
     parent_id?: string;
+    cost?: number;
 }
 
 export function useItems() {

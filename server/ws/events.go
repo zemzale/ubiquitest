@@ -51,12 +51,14 @@ type EventTaskCreated struct {
 	Title     string    `json:"title"`
 	CreatedBy uint      `json:"created_by"`
 	ParentId  uuid.UUID `json:"parent_id"`
+	Cost      uint      `json:"cost"`
 }
 
 type EventTaskUpdated struct {
 	Id        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
 	Completed bool      `json:"completed"`
+	Cost      uint      `json:"cost"`
 }
 
 type EventTaskStoreFailure struct {

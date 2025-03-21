@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/zemzale/ubiquitest/domain/tasks"
@@ -113,8 +112,6 @@ func (s *Server) TakeConnection(username string, conn *websocket.Conn) {
 }
 
 func (s *Server) handleConnection(c *Client) {
-	c.conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-
 	for {
 		messageType, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -139,6 +136,8 @@ func (s *Server) handleConnection(c *Client) {
 			continue
 		}
 
+		log.Println("got a new event : ", event.EventType)
+
 		switch event.EventType {
 		case EventTypeTaskCreated:
 			log.Println("received task_created event from user ", c.user)
@@ -155,6 +154,7 @@ func (s *Server) handleConnection(c *Client) {
 				Title:     taskCreated.Title,
 				CreatedBy: taskCreated.CreatedBy,
 				ParentID:  taskCreated.ParentId,
+				Cost:      taskCreated.Cost,
 			}
 
 			if err := s.storeTask.Run(task); err != nil {
@@ -181,6 +181,7 @@ func (s *Server) handleConnection(c *Client) {
 				ID:        taskUpdated.Id,
 				Title:     taskUpdated.Title,
 				Completed: taskUpdated.Completed,
+				Cost:      taskUpdated.Cost,
 			}
 
 			if err := s.updateTask.Run(task, c.user.ID); err != nil {
