@@ -28,9 +28,9 @@ func TestStore(t *testing.T) {
 				require.NoError(t, err, "failed to insert user")
 			},
 			giveTask: Task{
-				ID:       uuid.MustParse("a3afc3d5-9717-40d8-9e66-2c0b9c2b6a53"),
-				Title:    "Create a new task",
-				CreateBy: "user",
+				ID:        uuid.MustParse("a3afc3d5-9717-40d8-9e66-2c0b9c2b6a53"),
+				Title:     "Create a new task",
+				CreatedBy: 1,
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func TestStore(t *testing.T) {
 			require.NoError(t, storage.CreateDB(db))
 			tt.prepareDB(t, db)
 
-			action := NewStore(db)
+			action := NewStore(storage.NewTaskRepository(db), storage.NewUserRepository(db))
 			if tt.wantErr {
 				assert.Error(t, action.Run(tt.giveTask), "expected error")
 				return

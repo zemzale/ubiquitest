@@ -41,7 +41,7 @@ func (r *Router) GetTasks(
 	}
 
 	return oapi.GetTasks200JSONResponse(
-		lo.Map(taskList, func(t tasks.Task, _ int) oapi.Todo {
+		lo.Map(r.tasksCalculate.Run(taskList), func(t tasks.Task, _ int) oapi.Todo {
 			return oapi.Todo{
 				Id:        t.ID,
 				Title:     t.Title,

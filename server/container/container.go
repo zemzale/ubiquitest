@@ -61,7 +61,16 @@ func Load() {
 			return nil, err
 		}
 
-		return router.NewRouter(cfg.HTTP.Port, taskStore, taskList, upsertUser, userFindByID, wss), nil
+		taskCalculate, err := do.Invoke[*tasks.CalculateCost](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return router.NewRouter(cfg.HTTP.Port, taskStore, taskList, taskCalculate, upsertUser, userFindByID, wss), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.CalculateCost, error) {
+		return tasks.NewCalculateCost(), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.Store, error) {

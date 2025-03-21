@@ -21,6 +21,7 @@ type Router struct {
 	websocketServer *ws.Server
 	taskList        *tasks.List
 	tasksStore      *tasks.Store
+	tasksCalculate  *tasks.CalculateCost
 	usersFindByID   *users.FindByID
 	usersUpsert     *users.FindOrCreate
 
@@ -32,6 +33,7 @@ func NewRouter(
 	httpPort string,
 	taskStore *tasks.Store,
 	taskList *tasks.List,
+	taskCalculate *tasks.CalculateCost,
 	upsertUser *users.FindOrCreate,
 	userFindByID *users.FindByID,
 	wss *ws.Server,
@@ -39,6 +41,7 @@ func NewRouter(
 	return &Router{
 		websocketServer: wss,
 		taskList:        taskList,
+		tasksCalculate:  taskCalculate,
 		usersUpsert:     upsertUser,
 		tasksStore:      taskStore,
 		usersFindByID:   userFindByID,
