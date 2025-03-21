@@ -119,90 +119,104 @@ func (s *Server) handleConnection(c *Client) {
 			s.clientChangeChan <- &clientChange{client: c, action: remove}
 			return
 		}
-		if messageType == websocket.CloseMessage {
-			log.Printf("received close for user '%s' \n", c.user.Username)
+
+		if err := s.handleMessage(messageType, message, c); err != nil {
+			log.Printf("received close for user '%s' with error `%s` \n", c.user.Username, err.Error())
 			s.clientChangeChan <- &clientChange{client: c, action: remove}
-			return
-		}
-
-		if messageType != websocket.TextMessage {
-			log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user.Username)
-			continue
-		}
-
-		var event Event
-		if err := json.Unmarshal(message, &event); err != nil {
-			log.Printf("failed to unmarshal event %s \n", err.Error())
-			continue
-		}
-
-		log.Println("got a new event : ", event.EventType)
-
-		switch event.EventType {
-		case EventTypeTaskCreated:
-			log.Println("received task_created event from user ", c.user)
-			taskCreated, err := event.AsEventTaskCreated()
-			if err != nil {
-				log.Println("failed to parse task_created event ", err, " ", string(message))
-				continue
-			}
-
-			log.Println(taskCreated)
-
-			task := tasks.Task{
-				ID:        taskCreated.Id,
-				Title:     taskCreated.Title,
-				CreatedBy: taskCreated.CreatedBy,
-				ParentID:  taskCreated.ParentId,
-				Cost:      taskCreated.Cost,
-			}
-
-			if err := s.storeTask.Run(task); err != nil {
-				log.Println("failed to store task ", err)
-				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
-					log.Println("failed to reply with error ", replyErr)
-				}
-				continue
-			}
-
-			s.broadcast(event, c)
-
-		case EventTypeTaskUpdated:
-			log.Println("received task_updated event from user ", c.user)
-			taskUpdated, err := event.AsEventTaskUpdated()
-			if err != nil {
-				log.Println("failed to parse task_updated event ", err, " ", string(message))
-				continue
-			}
-
-			log.Println(taskUpdated)
-
-			task := tasks.Task{
-				ID:        taskUpdated.Id,
-				Title:     taskUpdated.Title,
-				Completed: taskUpdated.Completed,
-				Cost:      taskUpdated.Cost,
-			}
-
-			if err := s.updateTask.Run(task, c.user.ID); err != nil {
-				log.Println("failed to update task ", err)
-				if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
-					log.Println("failed to reply with error ", replyErr)
-				}
-				continue
-			}
-
-			s.broadcast(event, c)
-		case EventTypePing:
-			log.Println("received ping from user ", c.user)
-			if err := s.reply(c, EventTypePing, nil); err != nil {
-				log.Println("failed to reply with error ", err)
-			}
-		default:
-			log.Println("unknown event type ", event.EventType)
-			log.Println(string(message))
 		}
 	}
+}
+
+func (s *Server) handleMessage(messageType int, message []byte, c *Client) error {
+	if messageType == websocket.CloseMessage {
+		return fmt.Errorf("received close for user '%s' \n", c.user.Username)
+	}
+
+	if messageType != websocket.TextMessage {
+		log.Printf("received unexpected message type %d for user '%s' \n", messageType, c.user.Username)
+		return nil
+	}
+
+	s.handleEvent(message, c)
+
+	return nil
+}
+
+func (s *Server) handleEvent(message []byte, c *Client) {
+	var event Event
+	if err := json.Unmarshal(message, &event); err != nil {
+		log.Printf("failed to unmarshal event %s \n", err.Error())
+	}
+
+	log.Println("got a new event : ", event.EventType)
+
+	switch event.EventType {
+	case EventTypeTaskCreated:
+		log.Println("received task_created event from user ", c.user)
+		taskCreated, err := event.AsEventTaskCreated()
+		if err != nil {
+			log.Println("failed to parse task_created event ", err, " ", string(message))
+		}
+
+		s.handleEventTaskCreated(taskCreated, c)
+	case EventTypeTaskUpdated:
+		log.Println("received task_updated event from user ", c.user)
+		taskUpdated, err := event.AsEventTaskUpdated()
+		if err != nil {
+			log.Println("failed to parse task_updated event ", err, " ", string(message))
+		}
+
+		s.handleEventTaskUpdated(taskUpdated, c)
+	case EventTypePing:
+		log.Println("received ping from user ", c.user)
+		if err := s.reply(c, EventTypePing, nil); err != nil {
+			log.Println("failed to reply with error ", err)
+		}
+	default:
+		log.Println("unknown event type ", event.EventType)
+		log.Println(string(message))
+	}
+}
+
+func (s *Server) handleEventTaskCreated(event EventTaskCreated, c *Client) {
+	log.Printf("handling task_created event from user `%s` with event `%s`", c.user.Username, event.Id)
+
+	task := tasks.Task{
+		ID:        event.Id,
+		Title:     event.Title,
+		CreatedBy: event.CreatedBy,
+		ParentID:  event.ParentId,
+		Cost:      event.Cost,
+	}
+
+	if err := s.storeTask.Run(task); err != nil {
+		log.Println("failed to store task ", err)
+		if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
+			log.Println("failed to reply with error ", replyErr)
+		}
+	}
+
+	s.broadcast(event, c)
+}
+
+func (s *Server) handleEventTaskUpdated(event EventTaskUpdated, c *Client) {
+	log.Printf("handling task_updated event from user `%s` with event `%s`", c.user.Username, event.Id)
+
+	task := tasks.Task{
+		ID:        event.Id,
+		Title:     event.Title,
+		Completed: event.Completed,
+		Cost:      event.Cost,
+	}
+
+	if err := s.updateTask.Run(task, c.user.ID); err != nil {
+		log.Println("failed to update task ", err)
+		if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
+			log.Println("failed to reply with error ", replyErr)
+		}
+	}
+
+	s.broadcast(event, c)
 }
 
 func (s *Server) broadcast(data any, broadcaster *Client) {
