@@ -54,7 +54,9 @@ func TestStore(t *testing.T) {
 			require.NoError(t, storage.CreateDB(db))
 			tt.prepareDB(t, db)
 
-			action := NewStore(storage.NewTaskRepository(db), storage.NewUserRepository(db))
+			taskRepo := storage.NewTaskRepository(db)
+
+			action := NewStore(NewUpdateParentCost(NewFindAllParents(taskRepo), taskRepo), taskRepo, storage.NewUserRepository(db))
 			if tt.wantErr {
 				assert.Error(t, action.Run(tt.giveTask), "expected error")
 				return
