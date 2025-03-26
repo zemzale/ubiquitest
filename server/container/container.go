@@ -140,7 +140,12 @@ func Load() {
 			return nil, err
 		}
 
-		return ws.NewServer(storeTask, updateTask, findUserByUsername), nil
+		taskCalculateCost, err := do.Invoke[*tasks.CalculateCost](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return ws.NewServer(storeTask, updateTask, taskCalculateCost, findUserByUsername), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*users.FindByUsername, error) {

@@ -18,9 +18,10 @@ type Server struct {
 	// the map and also to avoid race conditions with register/unregister channels
 	clientChangeChan chan *clientChange
 
-	storeTask  *tasks.Store
-	updateTask *tasks.Update
-	userFind   *users.FindByUsername
+	taskStore         *tasks.Store
+	taskUpdate        *tasks.Update
+	taskCalculateCost *tasks.CalculateCost
+	userFind          *users.FindByUsername
 }
 
 type clientChange struct {
@@ -35,14 +36,15 @@ const (
 	remove
 )
 
-func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, findUserByUsername *users.FindByUsername) *Server {
+func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, taskCalculateCost *tasks.CalculateCost, findUserByUsername *users.FindByUsername) *Server {
 	return &Server{
 		connections:      make(map[string]*Client),
 		clientChangeChan: make(chan *clientChange),
 
-		storeTask:  storeTask,
-		updateTask: updateTask,
-		userFind:   findUserByUsername,
+		taskStore:         storeTask,
+		taskUpdate:        updateTask,
+		taskCalculateCost: taskCalculateCost,
+		userFind:          findUserByUsername,
 	}
 }
 
@@ -189,7 +191,7 @@ func (s *Server) handleEventTaskCreated(event EventTaskCreated, c *Client) {
 		Cost:      event.Cost,
 	}
 
-	if err := s.storeTask.Run(task); err != nil {
+	if err := s.taskStore.Run(task); err != nil {
 		log.Println("failed to store task ", err)
 		if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 			log.Println("failed to reply with error ", replyErr)
@@ -209,7 +211,7 @@ func (s *Server) handleEventTaskUpdated(event EventTaskUpdated, c *Client) {
 		Cost:      event.Cost,
 	}
 
-	if err := s.updateTask.Run(task, c.user.ID); err != nil {
+	if err := s.taskUpdate.Run(task, c.user.ID); err != nil {
 		log.Println("failed to update task ", err)
 		if replyErr := s.reply(c, EventTypeTaskStoreFailure, err.Error()); replyErr != nil {
 			log.Println("failed to reply with error ", replyErr)
