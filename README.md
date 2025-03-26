@@ -15,10 +15,8 @@ not actually used react in quite a while, but I was able to get it working.
 There are some thigns missing on the backend side that I would usually include
 like:
 - greacefull shutdown,
-- better connection handling with channels 
 - proper authentication
 - better logging
-- metrics
 - tracing
 - and other things
 

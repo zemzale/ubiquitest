@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
 	"github.com/zemzale/ubiquitest/oapi"
@@ -75,6 +76,7 @@ func (r *Router) setupRoutes() {
 	}).Handler)
 	oapi.HandlerFromMux(oapi.NewStrictHandler(r, nil), r.mux)
 	r.mux.HandleFunc("/ws/tasks", r.WsTasks)
+	r.mux.Handle("/metrics", promhttp.Handler())
 }
 
 func (r *Router) printDebugRoutes() {
