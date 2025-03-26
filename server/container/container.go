@@ -144,8 +144,21 @@ func Load() {
 		if err != nil {
 			return nil, err
 		}
+		taskFindAllParents, err := do.Invoke[*tasks.FindAllParents](i)
+		if err != nil {
+			return nil, err
+		}
 
-		return ws.NewServer(storeTask, updateTask, taskCalculateCost, findUserByUsername), nil
+		return ws.NewServer(storeTask, updateTask, taskCalculateCost, taskFindAllParents, findUserByUsername), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.FindAllParents, error) {
+		taskRepo, err := do.Invoke[*storage.TaksRepository](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks.NewFindAllParents(taskRepo), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*users.FindByUsername, error) {

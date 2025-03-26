@@ -46,6 +46,18 @@ func FromEventStoreFailure(data EventTaskStoreFailure) (Event, error) {
 	}, nil
 }
 
+func FromEventTaskUpdated(data EventTaskUpdated) (Event, error) {
+	body, err := json.Marshal(data)
+	if err != nil {
+		return Event{}, fmt.Errorf("failed to marshal event: %w", err)
+	}
+
+	return Event{
+		EventType: EventTypeTaskUpdated,
+		Data:      body,
+	}, nil
+}
+
 type EventTaskCreated struct {
 	Id        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`

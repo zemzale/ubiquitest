@@ -19,21 +19,12 @@ func (u *Update) Run(task Task, userID uint) error {
 		return u.completeTask(task, userID)
 	}
 
-	result, err := u.db.Exec(
+	_, err := u.db.Exec(
 		"UPDATE tasks SET title = ?, completed = ?, completed_by = ?, cost = ? WHERE id = ?",
 		task.Title, task.Completed, nil, task.ID.String(), task.Cost,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update task: %w", err)
-	}
-
-	res, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-
-	if res == 0 {
-		return fmt.Errorf("no rows affected")
 	}
 
 	return nil

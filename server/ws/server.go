@@ -18,10 +18,18 @@ type Server struct {
 	// the map and also to avoid race conditions with register/unregister channels
 	clientChangeChan chan *clientChange
 
-	taskStore         *tasks.Store
-	taskUpdate        *tasks.Update
-	taskCalculateCost *tasks.CalculateCost
-	userFind          *users.FindByUsername
+	writeChan chan broadcastMessage
+
+	taskStore          *tasks.Store
+	taskUpdate         *tasks.Update
+	taskCalculateCost  *tasks.CalculateCost
+	taskFindAllParents *tasks.FindAllParents
+	userFind           *users.FindByUsername
+}
+
+type broadcastMessage struct {
+	data   any
+	target *Client
 }
 
 type clientChange struct {
@@ -36,20 +44,23 @@ const (
 	remove
 )
 
-func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, taskCalculateCost *tasks.CalculateCost, findUserByUsername *users.FindByUsername) *Server {
+func NewServer(storeTask *tasks.Store, updateTask *tasks.Update, taskCalculateCost *tasks.CalculateCost, taskFindAllParents *tasks.FindAllParents, findUserByUsername *users.FindByUsername) *Server {
 	return &Server{
 		connections:      make(map[string]*Client),
+		writeChan:        make(chan broadcastMessage),
 		clientChangeChan: make(chan *clientChange),
 
-		taskStore:         storeTask,
-		taskUpdate:        updateTask,
-		taskCalculateCost: taskCalculateCost,
-		userFind:          findUserByUsername,
+		taskStore:          storeTask,
+		taskUpdate:         updateTask,
+		taskCalculateCost:  taskCalculateCost,
+		taskFindAllParents: taskFindAllParents,
+		userFind:           findUserByUsername,
 	}
 }
 
 func (s *Server) Close() {
 	close(s.clientChangeChan)
+	close(s.writeChan)
 
 	for _, client := range s.connections {
 		client.Close()
@@ -57,6 +68,7 @@ func (s *Server) Close() {
 }
 
 func (s *Server) Run(ctx context.Context) {
+	go s.handleBroadcast(ctx)
 	go s.handleClients(ctx)
 }
 
@@ -198,7 +210,43 @@ func (s *Server) handleEventTaskCreated(event EventTaskCreated, c *Client) {
 		}
 	}
 
-	s.broadcast(event, c)
+	go s.broadcast(event, c)
+
+	if task.Cost != 0 {
+		parents, err := s.taskFindAllParents.Run(task.ParentID)
+		if err != nil {
+			log.Println("failed to find parents ", err)
+			return
+		}
+
+		// Need to add the task that we just created to the parents list so we can calcualte the cost for all of them
+		updatedTasks := s.taskCalculateCost.Run(append(parents, task))
+
+		for _, updatedTask := range updatedTasks {
+			// THe task we just created wont update the cost, since it's not changed
+			if updatedTask.ID == task.ID {
+				continue
+			}
+
+			if err := s.taskUpdate.Run(updatedTask, event.CreatedBy); err != nil {
+				log.Printf("failed to update parent cost with id '%s' when creating task '%s' with error '%s'", updatedTask.ID, event.Id, err.Error())
+				return
+			}
+
+			updateEvent, err := FromEventTaskUpdated(EventTaskUpdated{
+				Id:        updatedTask.ID,
+				Title:     updatedTask.Title,
+				Completed: updatedTask.Completed,
+				Cost:      updatedTask.Cost,
+			})
+			if err != nil {
+				log.Println("failed to create event from event_task_updated ", err)
+				continue
+			}
+
+			go s.broadcastToAll(updateEvent)
+		}
+	}
 }
 
 func (s *Server) handleEventTaskUpdated(event EventTaskUpdated, c *Client) {
@@ -221,14 +269,32 @@ func (s *Server) handleEventTaskUpdated(event EventTaskUpdated, c *Client) {
 	s.broadcast(event, c)
 }
 
+func (s *Server) broadcastToAll(data any) {
+	for _, conn := range s.connections {
+		s.writeChan <- broadcastMessage{data: data, target: conn}
+	}
+}
+
 func (s *Server) broadcast(data any, broadcaster *Client) {
 	for _, conn := range s.connections {
 		if conn.user.ID == broadcaster.user.ID {
 			continue
 		}
-		log.Printf("broadcasting to user '%#v' \n", conn.user)
-		if err := conn.conn.WriteJSON(data); err != nil {
-			log.Println(err)
+		s.writeChan <- broadcastMessage{data: data, target: conn}
+	}
+}
+
+func (s *Server) handleBroadcast(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case msg := <-s.writeChan:
+			log.Printf("broadcasting to user '%#v' \n", msg.target.user)
+			if err := msg.target.conn.WriteJSON(msg.data); err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }

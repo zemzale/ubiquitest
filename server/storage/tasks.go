@@ -101,3 +101,60 @@ func (s *TaksRepository) List() ([]*Task, error) {
 
 	return tasks, nil
 }
+
+func (s *TaksRepository) ListChildren(parentID string) ([]*Task, error) {
+	const query = `
+		SELECT 
+			tasks.id, 
+			tasks.title, 
+			tasks.created_by, 
+			tasks.parent_id, 
+			tasks.completed, 
+			tasks.cost,
+			users.username 
+		FROM tasks 
+		LEFT JOIN users ON users.id = tasks.created_by
+		WHERE tasks.parent_id = ?
+	`
+	rows, err := s.db.Queryx(query, parentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tasks: %w", err)
+	}
+	defer rows.Close()
+
+	tasks := make([]*Task, 0)
+	for rows.Next() {
+		var id string
+		var title string
+		var createdBy uint
+		var parentID sql.Null[string]
+		var completed bool
+		var username string
+		var cost uint
+		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed, &cost, &username); err != nil {
+			return nil, fmt.Errorf("failed to scan tasks: %w", err)
+		}
+
+		tasks = append(tasks, &Task{
+			ID:        id,
+			Title:     title,
+			CreatedBy: createdBy,
+			Completed: completed,
+			ParentID:  parentID,
+			Cost:      cost,
+		})
+	}
+
+	return tasks, nil
+}
+
+func (s *TaksRepository) Find(id string) (*Task, error) {
+	var task Task
+
+	err := s.db.Get(&task, "SELECT * FROM tasks WHERE id = ?", id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	return &task, nil
+}

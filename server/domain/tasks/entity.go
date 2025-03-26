@@ -31,3 +31,19 @@ func mapNewTaskToDB(task Task) storage.Task {
 		Cost:      task.Cost,
 	}
 }
+
+func mapNewTaskFromDB(taskRecord storage.Task) Task {
+	parnetUUID := uuid.Nil
+	if taskRecord.ParentID.Valid {
+		parnetUUID = uuid.MustParse(taskRecord.ParentID.V)
+	}
+
+	return Task{
+		ID:        uuid.MustParse(taskRecord.ID),
+		Title:     taskRecord.Title,
+		CreatedBy: taskRecord.CreatedBy,
+		Completed: taskRecord.Completed,
+		ParentID:  parnetUUID,
+		Cost:      taskRecord.Cost,
+	}
+}
