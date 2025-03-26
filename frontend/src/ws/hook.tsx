@@ -64,8 +64,6 @@ export function useCreateWebsocket(user: string): EnhancedWebSocket {
                     clearInterval(pingIntervalRef.current);
                 }
 
-                // Keep track of ping count to reduce logging
-                let pingCount = 0;
 
                 pingIntervalRef.current = setInterval(() => {
                     if (newWs.readyState === WebSocket.OPEN) {

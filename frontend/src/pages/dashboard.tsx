@@ -183,14 +183,9 @@ function TaskItem({
     // Calculate styling based on nesting level
     const isSubtask = level > 0;
 
-    // For subtasks, make them visually distinct with smaller size and darker background
-    const subtaskClasses = isSubtask ?
-        'mt-1 border-l-2 border-l-blue-300 pl-3 transform scale-95 origin-top-left' :
-        '';
-
     return (
         <>
-            <li key={item.id} className={`${subtaskClasses} ${isSubtask ? 'my-2' : 'mb-3'}`}>
+            <li key={item.id}>
                 <div className={`${isCompleted ? 'bg-gray-50' : 'bg-white'} 
                     shadow-sm rounded-lg ${isSubtask ? 'p-2.5' : 'p-4'} hover:shadow-md transition-shadow duration-200 
                     border ${isCompleted ? 'border-gray-200' : 'border-gray-100'}`}>
