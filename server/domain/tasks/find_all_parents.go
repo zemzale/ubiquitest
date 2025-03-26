@@ -25,13 +25,6 @@ func (f *FindAllParents) Run(parentID uuid.UUID) ([]Task, error) {
 	parentRecords := []*storage.Task{parent}
 
 	for {
-		children, err := f.repo.ListChildren(parent.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list children: %w", err)
-		}
-
-		parentRecords = append(parentRecords, children...)
-
 		if !parent.ParentID.Valid || parent.ParentID.V == uuid.Nil.String() {
 			break
 		}

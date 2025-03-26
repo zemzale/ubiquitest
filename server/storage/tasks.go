@@ -15,6 +15,7 @@ type Task struct {
 	CompletedBy sql.Null[uint]   `db:"completed_by"`
 	ParentID    sql.Null[string] `db:"parent_id"`
 	Cost        uint             `db:"cost"`
+	TotalCost   uint             `db:"total_cost"`
 }
 
 type TaksRepository struct {
@@ -27,9 +28,9 @@ func NewTaskRepository(db *sqlx.DB) *TaksRepository {
 
 func (r *TaksRepository) Create(todo Task) error {
 	query := `INSERT INTO tasks 
-		(id, title, created_by, completed, completed_by, parent_id, cost)
+		(id, title, created_by, completed, completed_by, parent_id, cost, total_cost)
 	VALUES 
-		(:id, :title, :created_by, :completed, :completed_by, :parent_id, :cost)`
+		(:id, :title, :created_by, :completed, :completed_by, :parent_id, :cost, :total_cost)`
 	result, err := r.db.NamedExec(query, todo)
 	if err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
@@ -66,6 +67,7 @@ func (s *TaksRepository) List() ([]*Task, error) {
 			tasks.parent_id, 
 			tasks.completed, 
 			tasks.cost,
+			tasks.total_cost,
 			users.username 
 		FROM tasks 
 		LEFT JOIN users ON users.id = tasks.created_by
@@ -85,7 +87,8 @@ func (s *TaksRepository) List() ([]*Task, error) {
 		var completed bool
 		var username string
 		var cost uint
-		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed, &cost, &username); err != nil {
+		var totalCost uint
+		if err := rows.Scan(&id, &title, &createdBy, &parentID, &completed, &cost, &totalCost, &username); err != nil {
 			return nil, fmt.Errorf("failed to scan tasks: %w", err)
 		}
 
@@ -96,6 +99,7 @@ func (s *TaksRepository) List() ([]*Task, error) {
 			Completed: completed,
 			ParentID:  parentID,
 			Cost:      cost,
+			TotalCost: totalCost,
 		})
 	}
 
@@ -157,4 +161,10 @@ func (s *TaksRepository) Find(id string) (*Task, error) {
 	}
 
 	return &task, nil
+}
+
+func (s *TaksRepository) UpdateTotalCost(parentID string, cost uint) error {
+	query := `UPDATE tasks SET total_cost = total_cost + ? WHERE id = ?`
+	_, err := s.db.Exec(query, cost, parentID)
+	return err
 }

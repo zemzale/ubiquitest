@@ -29,6 +29,7 @@ func mapNewTaskToDB(task Task) storage.Task {
 		Completed: task.Completed,
 		ParentID:  sql.Null[string]{V: parentID.String(), Valid: true},
 		Cost:      task.Cost,
+		TotalCost: task.Cost,
 	}
 }
 
@@ -44,6 +45,6 @@ func mapNewTaskFromDB(taskRecord storage.Task) Task {
 		CreatedBy: taskRecord.CreatedBy,
 		Completed: taskRecord.Completed,
 		ParentID:  parnetUUID,
-		Cost:      taskRecord.Cost,
+		Cost:      taskRecord.TotalCost,
 	}
 }

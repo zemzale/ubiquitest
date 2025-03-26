@@ -19,7 +19,8 @@ func CreateDB(db *sqlx.DB) error {
 			completed BOOLEAN NOT NULL DEFAULT false,
 			completed_by INTEGER NULL,
 			parent_id TEXT NULL,
-			cost INTEGER NOT NULL DEFAULT 0
+			cost INTEGER NOT NULL DEFAULT 0,
+			total_cost INTEGER NOT NULL DEFAULT 0
 		);
 	`)
 	if err != nil {
@@ -30,17 +31,6 @@ func CreateDB(db *sqlx.DB) error {
 		CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT NOT NULL
-		);
-	`)
-	if err != nil {
-		return fmt.Errorf("failed to create users table: %w", err)
-	}
-
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS task_tree (
-			id TEXT PRIMARY KEY,
-			parent_id TEXT NOT NULL,
-			root_id TEXT NOT NULL
 		);
 	`)
 	if err != nil {

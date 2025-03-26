@@ -8,12 +8,14 @@ import (
 )
 
 type Store struct {
+	updateParentCost *UpdateParentCost
+
 	taskRepo *storage.TaksRepository
 	userRepo *storage.UserRepository
 }
 
-func NewStore(insertTask *storage.TaksRepository, userRepo *storage.UserRepository) *Store {
-	return &Store{taskRepo: insertTask, userRepo: userRepo}
+func NewStore(updateParentCost *UpdateParentCost, insertTask *storage.TaksRepository, userRepo *storage.UserRepository) *Store {
+	return &Store{updateParentCost: updateParentCost, taskRepo: insertTask, userRepo: userRepo}
 }
 
 func (s *Store) Run(task Task) error {
@@ -33,6 +35,10 @@ func (s *Store) Run(task Task) error {
 
 	if err := s.taskRepo.Create(mapNewTaskToDB(task)); err != nil {
 		return fmt.Errorf("failed to insert task: %w", err)
+	}
+
+	if err := s.updateParentCost.Run(task.ParentID, task.Cost); err != nil {
+		return fmt.Errorf("failed to update parent cost: %w", err)
 	}
 
 	return nil

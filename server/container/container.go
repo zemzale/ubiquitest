@@ -80,7 +80,26 @@ func Load() {
 		}
 
 		taskRepo := storage.NewTaskRepository(db)
-		return tasks.NewStore(taskRepo, storage.NewUserRepository(db)), nil
+		updateParentCost, err := do.Invoke[*tasks.UpdateParentCost](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks.NewStore(updateParentCost, taskRepo, storage.NewUserRepository(db)), nil
+	})
+
+	do.Provide(nil, func(i *do.Injector) (*tasks.UpdateParentCost, error) {
+		db, err := do.Invoke[*sqlx.DB](i)
+		if err != nil {
+			return nil, err
+		}
+
+		findAllParents, err := do.Invoke[*tasks.FindAllParents](i)
+		if err != nil {
+			return nil, err
+		}
+
+		return tasks.NewUpdateParentCost(findAllParents, storage.NewTaskRepository(db)), nil
 	})
 
 	do.Provide(nil, func(i *do.Injector) (*tasks.List, error) {

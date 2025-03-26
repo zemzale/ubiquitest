@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/zemzale/ubiquitest/domain/tasks"
 	"github.com/zemzale/ubiquitest/domain/users"
@@ -212,32 +213,21 @@ func (s *Server) handleEventTaskCreated(event EventTaskCreated, c *Client) {
 
 	go s.broadcast(event, c)
 
-	if task.Cost != 0 {
+	if task.Cost != 0 && task.ParentID != uuid.Nil {
+		log.Println("updating cost for task parents", task.ID)
+
 		parents, err := s.taskFindAllParents.Run(task.ParentID)
 		if err != nil {
 			log.Println("failed to find parents ", err)
 			return
 		}
 
-		// Need to add the task that we just created to the parents list so we can calcualte the cost for all of them
-		updatedTasks := s.taskCalculateCost.Run(append(parents, task))
-
-		for _, updatedTask := range updatedTasks {
-			// THe task we just created wont update the cost, since it's not changed
-			if updatedTask.ID == task.ID {
-				continue
-			}
-
-			if err := s.taskUpdate.Run(updatedTask, event.CreatedBy); err != nil {
-				log.Printf("failed to update parent cost with id '%s' when creating task '%s' with error '%s'", updatedTask.ID, event.Id, err.Error())
-				return
-			}
-
+		for _, parent := range parents {
 			updateEvent, err := FromEventTaskUpdated(EventTaskUpdated{
-				Id:        updatedTask.ID,
-				Title:     updatedTask.Title,
-				Completed: updatedTask.Completed,
-				Cost:      updatedTask.Cost,
+				Id:        parent.ID,
+				Title:     parent.Title,
+				Completed: parent.Completed,
+				Cost:      parent.Cost,
 			})
 			if err != nil {
 				log.Println("failed to create event from event_task_updated ", err)
